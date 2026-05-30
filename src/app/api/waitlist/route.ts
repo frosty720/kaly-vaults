@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getSupabaseClient } from '@/lib/supabase';
-import { sendReservedEmail, addToWaitlistAudience } from '@/lib/resend';
+import { sendReservedEmail, addToWaitlistTopic } from '@/lib/resend';
 import { isLocale } from '@/i18n/config';
 
 interface WaitlistPayload {
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
 	// Post-signup side effects — must NEVER fail the signup if they error.
 	const results = await Promise.allSettled([
 		sendReservedEmail({ to: email, locale, tier }),
-		addToWaitlistAudience({ email }),
+		addToWaitlistTopic({ email }),
 	]);
 	for (const r of results) {
 		if (r.status === 'rejected') {

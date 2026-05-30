@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { sendReservedEmail, addToWaitlistAudience, getResendClient } from './resend';
+import { sendReservedEmail, addToWaitlistTopic, getResendClient } from './resend';
 
 describe('Resend no-op contract (no API key)', () => {
 	let savedKey: string | undefined;
@@ -31,22 +31,22 @@ describe('Resend no-op contract (no API key)', () => {
 		expect(result).toBe(false);
 	});
 
-	it('addToWaitlistAudience resolves to false without throwing', async () => {
-		const result = await addToWaitlistAudience({ email: 'test@example.com' });
+	it('addToWaitlistTopic resolves to false without throwing', async () => {
+		const result = await addToWaitlistTopic({ email: 'test@example.com' });
 		expect(result).toBe(false);
 	});
 
-	it('addToWaitlistAudience resolves to false even when RESEND_AUDIENCE_ID is set but no key', async () => {
-		const savedAudienceId = process.env.RESEND_AUDIENCE_ID;
-		process.env.RESEND_AUDIENCE_ID = 'some-audience-id';
+	it('addToWaitlistTopic resolves to false even when RESEND_TOPIC_ID is set but no key', async () => {
+		const savedTopicId = process.env.RESEND_TOPIC_ID;
+		process.env.RESEND_TOPIC_ID = 'some-topic-id';
 		try {
-			const result = await addToWaitlistAudience({ email: 'test@example.com' });
+			const result = await addToWaitlistTopic({ email: 'test@example.com' });
 			expect(result).toBe(false);
 		} finally {
-			if (savedAudienceId !== undefined) {
-				process.env.RESEND_AUDIENCE_ID = savedAudienceId;
+			if (savedTopicId !== undefined) {
+				process.env.RESEND_TOPIC_ID = savedTopicId;
 			} else {
-				delete process.env.RESEND_AUDIENCE_ID;
+				delete process.env.RESEND_TOPIC_ID;
 			}
 		}
 	});

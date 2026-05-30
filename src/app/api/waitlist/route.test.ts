@@ -9,11 +9,11 @@ vi.mock('@/lib/supabase', () => ({
 
 vi.mock('@/lib/resend', () => ({
 	sendReservedEmail: vi.fn().mockResolvedValue(true),
-	addToWaitlistAudience: vi.fn().mockResolvedValue(true),
+	addToWaitlistTopic: vi.fn().mockResolvedValue(true),
 }));
 
 import { getSupabaseClient } from '@/lib/supabase';
-import { sendReservedEmail, addToWaitlistAudience } from '@/lib/resend';
+import { sendReservedEmail, addToWaitlistTopic } from '@/lib/resend';
 import { POST } from './route';
 
 // Helper: build a Supabase client stub whose insert resolves to the given result.
@@ -44,7 +44,7 @@ beforeEach(() => {
 	vi.clearAllMocks();
 	// Reset default resolved values after clearAllMocks wipes them.
 	vi.mocked(sendReservedEmail).mockResolvedValue(true);
-	vi.mocked(addToWaitlistAudience).mockResolvedValue(true);
+	vi.mocked(addToWaitlistTopic).mockResolvedValue(true);
 });
 
 // ---------------------------------------------------------------------------
@@ -69,8 +69,8 @@ describe('POST /api/waitlist — valid signup, insert ok', () => {
 			locale: 'fr',
 			tier: 'validator',
 		});
-		expect(addToWaitlistAudience).toHaveBeenCalledTimes(1);
-		expect(addToWaitlistAudience).toHaveBeenCalledWith({ email: 'user@example.com' });
+		expect(addToWaitlistTopic).toHaveBeenCalledTimes(1);
+		expect(addToWaitlistTopic).toHaveBeenCalledWith({ email: 'user@example.com' });
 	});
 });
 
@@ -188,7 +188,7 @@ describe('POST /api/waitlist — no Supabase configured', () => {
 		expect(res.status).toBe(200);
 		expect(data).toEqual({ ok: true });
 		expect(sendReservedEmail).toHaveBeenCalledTimes(1);
-		expect(addToWaitlistAudience).toHaveBeenCalledTimes(1);
+		expect(addToWaitlistTopic).toHaveBeenCalledTimes(1);
 	});
 });
 

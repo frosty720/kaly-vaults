@@ -22,11 +22,18 @@ export async function sendReservedEmail(args: {
 	return true;
 }
 
-/** Adds the contact to the Resend audience. No-op (returns false) if RESEND_API_KEY or RESEND_AUDIENCE_ID is not set. */
-export async function addToWaitlistAudience(args: { email: string }): Promise<boolean> {
+/**
+ * Subscribes the contact to the waitlist topic (opt-in).
+ * No-op (returns false) if RESEND_API_KEY or RESEND_TOPIC_ID is not set.
+ * Note: `audienceId` is deprecated in resend v6 — contacts are global and organised by topics/segments.
+ */
+export async function addToWaitlistTopic(args: { email: string }): Promise<boolean> {
 	const resend = getResendClient();
-	const audienceId = process.env.RESEND_AUDIENCE_ID;
-	if (!resend || !audienceId) return false;
-	await resend.contacts.create({ audienceId, email: args.email, unsubscribed: false });
+	const topicId = process.env.RESEND_TOPIC_ID;
+	if (!resend || !topicId) return false;
+	await resend.contacts.create({
+		email: args.email,
+		topics: [{ id: topicId, subscription: 'opt_in' }],
+	});
 	return true;
 }
