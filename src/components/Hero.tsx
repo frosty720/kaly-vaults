@@ -1,4 +1,5 @@
 import type { Dictionary } from '@/i18n/dictionaries/en';
+import { Countdown } from './Countdown';
 
 interface HeroProps {
 	dict: Dictionary;
@@ -20,7 +21,11 @@ export function Hero({ dict }: HeroProps) {
 					{dict.hero.badge}
 				</div>
 
-				<h1 className="mt-6 text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05] text-white max-w-4xl">
+				<div className="mt-8">
+					<Countdown dict={dict} />
+				</div>
+
+				<h1 className="mt-8 text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05] text-white max-w-4xl">
 					{dict.hero.headlineBefore}{' '}
 					<span className="bg-gradient-to-r from-amber-300 via-amber-500 to-amber-600 bg-clip-text text-transparent">
 						{dict.hero.headlineAccent}

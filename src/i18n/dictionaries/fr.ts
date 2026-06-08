@@ -32,6 +32,14 @@ const fr: Dictionary = {
 			tiers: 'Pour chaque investisseur',
 			tiersValue: '5 paliers',
 		},
+		countdown: {
+			title: 'Lancement public dans',
+			launched: 'Le coffre est en ligne',
+			days: 'Jours',
+			hours: 'Heures',
+			minutes: 'Minutes',
+			seconds: 'Secondes',
+		},
 	},
 
 	calculator: {

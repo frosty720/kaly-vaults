@@ -30,6 +30,14 @@ const en = {
 			tiers: 'For every investor',
 			tiersValue: '5 Tiers',
 		},
+		countdown: {
+			title: 'Public launch in',
+			launched: 'The vault is live',
+			days: 'Days',
+			hours: 'Hours',
+			minutes: 'Minutes',
+			seconds: 'Seconds',
+		},
 	},
 
 	calculator: {
