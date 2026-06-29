@@ -15,7 +15,7 @@ import type { Dictionary } from '@/i18n/dictionaries/en';
 
 const A = getAddresses(ACTIVE_NETWORK);
 
-const STABLE_KEYS = ['USDT', 'USDC', 'DAI', 'KUSD'] as const;
+const STABLE_KEYS = ['USDT', 'KUSD'] as const;
 type StableKey = (typeof STABLE_KEYS)[number];
 
 interface BuyModalProps {

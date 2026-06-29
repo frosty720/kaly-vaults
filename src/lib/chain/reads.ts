@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getAddresses } from './addresses';
 import { ACTIVE_NETWORK } from './chains';
 import { rewardsPoolAbi, vaultManagerAbi, positionManagerAbi, v3PoolAbi } from './abis';
-import { getOwnedVaultTokenIds, getPolDeployments, getPurchases, getTreasuryPositionIds } from './events';
+import { getOwnedVaultTokenIds, getPurchases, getTreasuryPositionIds } from './events';
 import { klcUsdFromSlot0, positionTokenAmounts, positionUsdValue } from './pol';
 import { getAffiliateEvents, affiliateStats, leaderboard } from './affiliate';
 import { getKlcPrice, isValidKlcPrice } from '@/lib/price';
@@ -238,22 +238,23 @@ export function usePolStats() {
 		refetchInterval: 30000,
 		queryFn: async () => {
 			// --- Live valuation: enumerate ALL positions the treasury owns via ERC721Enumerable ---
+			// Each buy minted its own LP NFT, so the treasury holds many positions across the 2
+			// KLC/stable pools. They're independent, so value them concurrently (not one-at-a-time)
+			// and aggregate per pool afterwards.
 			const ids = await getTreasuryPositionIds(client!, A.positionManager!, A.treasury!);
-			let totalUsd = 0;
-			const poolSums: Record<string, number> = {};
+			const wklcAddr = A.wklc!.toLowerCase();
 
-			for (const id of ids) {
+			const valued = await Promise.all(ids.map(async (id) => {
 				// positions() returns a named readonly tuple — access by index
 				// [0]=nonce [1]=operator [2]=token0 [3]=token1 [4]=fee [5]=tickLower [6]=tickUpper [7]=liquidity
 				const pos = await client!.readContract({
 					address: A.positionManager!, abi: positionManagerAbi, functionName: 'positions', args: [id],
 				});
 				const liquidity = pos[7] as bigint;
-				if (liquidity === 0n) continue;
+				if (liquidity === 0n) return null;
 
 				const token0 = (pos[2] as string).toLowerCase();
 				const token1 = (pos[3] as string).toLowerCase();
-				const wklcAddr = A.wklc!.toLowerCase();
 
 				// Identify the stable: whichever of token0/token1 is NOT WKLC
 				const stableIsToken0 = token0 !== wklcAddr;
@@ -263,10 +264,10 @@ export function usePolStats() {
 				const stableEntry = Object.entries(A.stables).find(
 					([, info]) => info.address.toLowerCase() === stableAddr,
 				);
-				if (!stableEntry) continue;
+				if (!stableEntry) return null;
 				// Also confirm the other side is actually WKLC
 				const otherAddr = stableIsToken0 ? token1 : token0;
-				if (otherAddr !== wklcAddr) continue;
+				if (otherAddr !== wklcAddr) return null;
 
 				const [symbol, stable] = stableEntry;
 
@@ -302,17 +303,19 @@ export function usePolStats() {
 					stableIsToken0,
 					klcPriceUsd,
 				});
-				totalUsd += usd;
-				poolSums[symbol] = (poolSums[symbol] ?? 0) + usd;
-			}
+				return { symbol, usd };
+			}));
 
+			let totalUsd = 0;
+			const poolSums: Record<string, number> = {};
+			for (const v of valued) {
+				if (!v) continue;
+				totalUsd += v.usd;
+				poolSums[v.symbol] = (poolSums[v.symbol] ?? 0) + v.usd;
+			}
 			const perPool = Object.entries(poolSums).map(([symbol, usd]) => ({ symbol, usd }));
 
-			// --- Sparkline: scan PolDeployed from ALL polSources (current + old VaultManager) ---
-			const deployments = await getPolDeployments(client!, A.polSources, A.polDeployBlock);
-
-			// Seeded-bootstrap POL: every purchase deploys its full POL in-tx (no buffer/pending).
-			return { totalUsd, perPool, deployments };
+			return { totalUsd, perPool };
 		},
 	});
 }

@@ -67,7 +67,7 @@ export function tierByKey(key: TierKey): Tier {
 }
 
 /** Stablecoins accepted as payment when purchasing a vault. */
-export const ACCEPTED_STABLES = ['USDT', 'USDC', 'DAI', 'KUSD'] as const;
+export const ACCEPTED_STABLES = ['USDT', 'KUSD'] as const;
 
 /** 80/20 split. POL is locked permanent liquidity; the 20% funds growth + ops. */
 export const POL_PCT = 0.80;

@@ -1,37 +1,15 @@
 'use client';
 
 import { usePolStats, useKlcPrice } from '@/lib/chain/reads';
-import { buildPolAddedSeries } from '@/lib/chain/series';
-import { getAddresses } from '@/lib/chain/addresses';
-import { ACTIVE_NETWORK } from '@/lib/chain/chains';
 import { fmtUsd } from '@/lib/format';
 import { Skeleton } from './Skeleton';
 import { LiveBadge } from './LiveBadge';
-import { AreaChart } from './AreaChart';
 import { AnimatedNumber } from './AnimatedNumber';
 import type { Dictionary } from '@/i18n/dictionaries/en';
-
-const A = getAddresses(ACTIVE_NETWORK);
-
-// Reverse lookup: address (lowercase) → { symbol, decimals }
-const addrToStable: Record<string, { symbol: string; decimals: number }> = {};
-for (const [symbol, info] of Object.entries(A.stables)) {
-	addrToStable[info.address.toLowerCase()] = { symbol, decimals: info.decimals };
-}
 
 export function PolHero({ t }: { t: Dictionary['app']['pol'] }) {
 	const { data, isLoading, isError } = usePolStats();
 	const { data: klcPrice } = useKlcPrice();
-
-	const series = (() => {
-		if (!data?.deployments?.length) return [];
-		const events = data.deployments.flatMap((d) => {
-			const stable = addrToStable[d.stable.toLowerCase()];
-			if (!stable) return [];
-			return [{ timestamp: Number(d.blockNumber), swapped: d.swapped, decimals: stable.decimals }];
-		});
-		return buildPolAddedSeries(events);
-	})();
 
 	// Per-pool live LP value from on-chain position enumeration
 	const poolBreakdown = data?.perPool ?? [];
@@ -64,11 +42,6 @@ export function PolHero({ t }: { t: Dictionary['app']['pol'] }) {
 						</span>
 					</div>
 				)}
-			</div>
-
-			{/* Chart */}
-			<div className="relative mb-5">
-				<AreaChart points={series} emptyLabel={t.empty} />
 			</div>
 
 			{/* Per-pool breakdown chips */}

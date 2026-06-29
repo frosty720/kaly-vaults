@@ -34,8 +34,9 @@ describe('splitPurchase', () => {
 		expect(FLOW_EXAMPLE_USD).toBe(1000);
 	});
 
-	it('includes DAI among the accepted stablecoins', () => {
-		expect(ACCEPTED_STABLES).toContain('DAI');
-		expect([...ACCEPTED_STABLES]).toEqual(['USDT', 'USDC', 'DAI', 'KUSD']);
+	it('accepts only the KLC-pair stablecoins (USDT, KUSD)', () => {
+		expect([...ACCEPTED_STABLES]).toEqual(['USDT', 'KUSD']);
+		expect(ACCEPTED_STABLES).not.toContain('USDC');
+		expect(ACCEPTED_STABLES).not.toContain('DAI');
 	});
 });

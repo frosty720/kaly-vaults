@@ -49,26 +49,8 @@ export async function getPurchases(
 	}));
 }
 
-// All PolDeployed events across all polSources (sparkline history). Sorted chronologically.
-// Pass polSources (all VaultManager addresses, old + new) to capture the full history.
-export async function getPolDeployments(
-	client: PublicClient, polSources: `0x${string}`[], fromBlock: bigint,
-): Promise<{ stable: `0x${string}`; swapped: bigint; positionId: bigint; blockNumber: bigint }[]> {
-	const ev = vaultManagerAbi.find((x: any) => x.type === 'event' && x.name === 'PolDeployed');
-	const head = await client.getBlockNumber();
-	const all: { stable: `0x${string}`; swapped: bigint; positionId: bigint; blockNumber: bigint }[] = [];
-	for (const src of polSources) {
-		const logs = await getLogsChunked(client, { address: src, event: ev, fromBlock, toBlock: head });
-		for (const l of logs) {
-			all.push({ stable: l.args.stable, swapped: l.args.swapped, positionId: l.args.positionId, blockNumber: l.blockNumber });
-		}
-	}
-	// Sort by block number so the sparkline series is chronologically ordered
-	all.sort((a, b) => (a.blockNumber < b.blockNumber ? -1 : a.blockNumber > b.blockNumber ? 1 : 0));
-	return all;
-}
-
 // Enumerate all LP positions the treasury currently owns via ERC721Enumerable on the NPM.
+// The per-index reads are independent, so fire them concurrently rather than one-at-a-time.
 export async function getTreasuryPositionIds(
 	client: PublicClient,
 	positionManager: `0x${string}`,
@@ -80,15 +62,15 @@ export async function getTreasuryPositionIds(
 		functionName: 'balanceOf',
 		args: [treasury],
 	}) as bigint;
-	const ids: bigint[] = [];
-	for (let i = 0n; i < balance; i++) {
-		const id = await client.readContract({
-			address: positionManager,
-			abi: positionManagerAbi,
-			functionName: 'tokenOfOwnerByIndex',
-			args: [treasury, i],
-		}) as bigint;
-		ids.push(id);
-	}
-	return ids;
+	const indices = Array.from({ length: Number(balance) }, (_, i) => BigInt(i));
+	return Promise.all(
+		indices.map((i) =>
+			client.readContract({
+				address: positionManager,
+				abi: positionManagerAbi,
+				functionName: 'tokenOfOwnerByIndex',
+				args: [treasury, i],
+			}) as Promise<bigint>,
+		),
+	);
 }
