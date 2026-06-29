@@ -35,7 +35,7 @@ export function TierCards({ priceMultiplier, dict, locale }: TierCardsProps) {
 							priceMultiplier,
 						});
 						const isFeatured = tier.featured;
-						const audience = dict.tiers.audiences[tier.key];
+						const audience = (dict.tiers.audiences as Record<string, string>)[tier.key] ?? tier.audience;
 						return (
 							<div
 								key={tier.key}

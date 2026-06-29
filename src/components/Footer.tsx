@@ -16,11 +16,14 @@ export function Footer({ dict }: FooterProps) {
 						<a href="https://kalychain.io" target="_blank" rel="noreferrer" className="hover:text-amber-400 transition-colors">
 							{dict.footer.links.website}
 						</a>
-						<a href="https://twitter.com/KalyChain" target="_blank" rel="noreferrer" className="hover:text-amber-400 transition-colors">
+						<a href="https://x.com/KalyChainEVM" target="_blank" rel="noreferrer" className="hover:text-amber-400 transition-colors">
 							{dict.footer.links.twitter}
 						</a>
 						<a href="https://t.me/KalyChain" target="_blank" rel="noreferrer" className="hover:text-amber-400 transition-colors">
 							{dict.footer.links.telegram}
+						</a>
+						<a href="https://discord.gg/tTe8BmcAks" target="_blank" rel="noreferrer" className="hover:text-amber-400 transition-colors">
+							{dict.footer.links.discord}
 						</a>
 						<a href="https://docs.kalychain.io" target="_blank" rel="noreferrer" className="hover:text-amber-400 transition-colors">
 							{dict.footer.links.docs}

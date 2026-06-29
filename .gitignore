@@ -45,3 +45,6 @@ next-env.d.ts
 /docs
 AGENTS.md*
 CLAUDE.md*
+
+# Claude Code local state (incl. agent worktrees)
+.claude/

@@ -26,10 +26,10 @@ export function InvestmentCalculator({
 	klcPrice,
 }: InvestmentCalculatorProps) {
 	const [amount, setAmount] = useState<number>(1000);
-	const [selectedTier, setSelectedTier] = useState<TierKey>('validator');
+	const [selectedTier, setSelectedTier] = useState<TierKey>('pro1k');
 
 	const tier = tierByKey(selectedTier);
-	const audience = dict.tiers.audiences[tier.key];
+	const audience = (dict.tiers.audiences as Record<string, string>)[tier.key] ?? tier.audience;
 
 	const projection = useMemo(
 		() => project({ investmentUsd: amount, baseApr: tier.baseApr, priceMultiplier }),

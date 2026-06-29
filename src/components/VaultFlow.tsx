@@ -79,17 +79,11 @@ export function VaultFlow({ dict, locale }: VaultFlowProps) {
 						<div className="text-amber-500 text-center my-3" aria-hidden>
 							▼
 						</div>
-						<div className="grid gap-3 sm:grid-cols-3">
+						<div className="grid gap-3 sm:grid-cols-2">
 							<div className="rounded-lg border border-white/10 bg-white/5 p-3 text-center text-sm text-white/80">
-								{f.swapToKlc}
+								{f.feesShare}
 								<div className="text-amber-300/90 font-semibold tabular-nums mt-1">
-									{formatUSD(split.polToKlc, locale)}
-								</div>
-							</div>
-							<div className="rounded-lg border border-white/10 bg-white/5 p-3 text-center text-sm text-white/80">
-								{f.pairedLp}
-								<div className="text-amber-300/90 font-semibold tabular-nums mt-1">
-									{formatUSD(split.polToLp, locale)}
+									{formatUSD(split.fees, locale)}
 								</div>
 							</div>
 							<div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-center text-sm text-white/90">
@@ -102,6 +96,7 @@ export function VaultFlow({ dict, locale }: VaultFlowProps) {
 								</div>
 							</div>
 						</div>
+						<p className="mt-4 text-xs text-white/55 leading-relaxed">{f.polMechanism}</p>
 						<div className="mt-6 rounded-lg border border-amber-500/30 bg-white/5 p-4">
 							<div className="flex items-center gap-2 text-amber-300 text-[10px] uppercase tracking-wider font-semibold mb-1">
 								<Zap className="w-3.5 h-3.5" aria-hidden />
