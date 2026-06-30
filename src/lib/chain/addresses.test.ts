@@ -11,8 +11,14 @@ describe('addresses', () => {
 		expect(a.stables.USDT.decimals).toBe(6);
 		expect(a.stables.KUSD.decimals).toBe(18);
 	});
-	it('mainnet marks undeployed vault contracts as null', () => {
+	it('mainnet returns the deployed v4 proxies + USDT/KUSD stables', () => {
 		const a = getAddresses('mainnet');
-		expect(a.vaultManager).toBeNull();
+		expect(a.vaultManager).toBe('0x8ad3aD4a3F20672d39F6F87d6bdf1DF5386ac6A5');
+		expect(a.rewardsPool).toBe('0x8b80800Cf6dA88D59EB09CaE4Fd2196423c48b26');
+		expect(a.treasury).toBe('0x92564ec0d22BBd5e3FF978B977CA968e6c7d1c44');
+		expect(Object.keys(a.stables)).toEqual(['KUSD', 'USDT']);
+		expect(a.stables.USDT.decimals).toBe(6);
+		expect(a.stables.KUSD.decimals).toBe(18);
+		expect(a.deployBlock).toBe(51187545n);
 	});
 });
