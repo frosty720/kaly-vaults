@@ -1,7 +1,7 @@
 'use client';
 
 import { ConnectButton, darkTheme } from 'thirdweb/react';
-import { thirdwebClient, thirdwebChains, twActiveChain, allWallets } from '@/lib/chain/thirdweb';
+import { thirdwebClient, thirdwebChains, twActiveChain, allWallets, SUPPORTED_TOKENS } from '@/lib/chain/thirdweb';
 
 // Brand the thirdweb modal + button to the vault's amber-on-black system.
 const vaultTheme = darkTheme({
@@ -30,6 +30,7 @@ export function WalletButton({ compact = false, label = 'Connect Wallet' }: { co
 			wallets={allWallets}
 			chains={thirdwebChains}
 			chain={twActiveChain}
+			supportedTokens={SUPPORTED_TOKENS}
 			theme={vaultTheme}
 			connectButton={{ label }}
 			connectModal={{

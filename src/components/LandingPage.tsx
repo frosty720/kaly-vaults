@@ -6,7 +6,6 @@ import { InvestmentCalculator } from './InvestmentCalculator';
 import { VaultFlow } from './VaultFlow';
 import { TierCards } from './TierCards';
 import { ScalingCallout } from './ScalingCallout';
-import { WaitlistForm } from './WaitlistForm';
 import type { Dictionary } from '@/i18n/dictionaries/en';
 import type { Locale } from '@/i18n/config';
 
@@ -32,7 +31,6 @@ export function LandingPage({ dict, locale, klcPrice }: LandingPageProps) {
 			<VaultFlow dict={dict} locale={locale} />
 			<TierCards priceMultiplier={priceMultiplier} dict={dict} locale={locale} />
 			<ScalingCallout dict={dict} locale={locale} klcPrice={klcPrice} />
-			<WaitlistForm dict={dict} locale={locale} />
 		</>
 	);
 }

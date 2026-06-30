@@ -66,12 +66,12 @@ export function TierCards({ priceMultiplier, dict, locale }: TierCardsProps) {
 								</div>
 
 								<a
-									href="#waitlist"
+									href={`/${locale}/app`}
 									className={`mt-6 block text-center px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
 										isFeatured ? 'btn-primary' : 'btn-ghost'
 									}`}
 								>
-									{dict.tiers.joinWaitlist}
+									{dict.nav.launchApp}
 								</a>
 							</div>
 						);
