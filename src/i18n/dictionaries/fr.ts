@@ -4,7 +4,7 @@ const fr: Dictionary = {
 	meta: {
 		title: 'Coffre-fort KalyChain — Gagnez du KLC passif adossé à la chaîne',
 		description:
-			'Chaque bloc produit par KalyChain est reversé directement aux détenteurs du Coffre. Achetez une fois, gagnez pour toujours. La vente est en direct — achetez un pack et commencez à gagner à chaque bloc.',
+			'Chaque bloc produit par KalyChain est reversé directement aux détenteurs du Coffre. Achetez une fois, gagnez du KLC passif. La vente est en direct — achetez un pack et commencez à gagner à chaque bloc.',
 		ogDescription:
 			'Chaque bloc produit par KalyChain va directement aux détenteurs du Coffre. Huit packs de 50 $ à 100 000 $, qui augmentent avec le prix du KLC.',
 	},
@@ -25,7 +25,7 @@ const fr: Dictionary = {
 		headlineAccent: 'du KLC passif',
 		headlineAfter: 'adossé à la chaîne elle-même',
 		subhead:
-			'Chaque bloc produit par KalyChain est reversé directement aux détenteurs du Coffre. Achetez une fois, gagnez pour toujours. La vente est en direct — choisissez un pack et commencez à gagner à chaque bloc.',
+			'Chaque bloc produit par KalyChain est reversé directement aux détenteurs du Coffre. Achetez une fois, gagnez du KLC passif. La vente est en direct — choisissez un pack et commencez à gagner à chaque bloc.',
 		stats: {
 			blocksPerDay: 'Blocs par jour',
 			rewardPerBlock: 'Récompense par bloc',
