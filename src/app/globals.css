@@ -134,6 +134,14 @@ body {
 	.input-field::placeholder {
 		color: var(--muted-foreground);
 	}
+	/* Native <select> dropdown: render dark instead of the OS-default white popup. */
+	select.input-field {
+		color-scheme: dark;
+	}
+	.input-field option {
+		background-color: #1c1917;
+		color: #ffffff;
+	}
 
 	.heading-underline {
 		position: relative;
@@ -165,6 +173,111 @@ body {
 	0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6); }
 	70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
 	100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+
+/* ====================================================================== */
+/* dApp dashboard — bold visual layer                                     */
+/* ====================================================================== */
+
+@layer components {
+	/* Gradient-mesh atmosphere behind the POL hero. Layered radial amber glows
+	   over near-black, with a slow drift so the surface feels alive. */
+	.mesh-hero {
+		position: relative;
+		overflow: hidden;
+		background:
+			radial-gradient(60% 90% at 12% 8%, rgba(245, 158, 11, 0.16), transparent 60%),
+			radial-gradient(50% 80% at 92% 18%, rgba(217, 119, 6, 0.14), transparent 55%),
+			radial-gradient(80% 120% at 50% 120%, rgba(180, 83, 9, 0.12), transparent 60%),
+			linear-gradient(160deg, rgba(28, 25, 23, 0.9), rgba(10, 10, 10, 0.92));
+	}
+	.mesh-hero::before {
+		content: '';
+		position: absolute;
+		inset: -40%;
+		background: radial-gradient(closest-side, rgba(245, 158, 11, 0.10), transparent);
+		animation: mesh-drift 18s ease-in-out infinite alternate;
+		pointer-events: none;
+	}
+	/* Fine grid texture for depth on dashboard surfaces. */
+	.grid-texture {
+		background-image:
+			linear-gradient(rgba(245, 158, 11, 0.04) 1px, transparent 1px),
+			linear-gradient(90deg, rgba(245, 158, 11, 0.04) 1px, transparent 1px);
+		background-size: 28px 28px;
+	}
+
+	/* KPI / stat card — glass with an amber top edge that lights on hover. */
+	.stat-card {
+		position: relative;
+		background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015));
+		border: 1px solid rgba(245, 158, 11, 0.16);
+		border-radius: 1rem;
+		overflow: hidden;
+		transition: border-color 220ms ease, transform 220ms ease, box-shadow 220ms ease;
+	}
+	.stat-card::before {
+		content: '';
+		position: absolute;
+		top: 0; left: 0; right: 0;
+		height: 2px;
+		background: linear-gradient(90deg, transparent, var(--amber-500), transparent);
+		opacity: 0.5;
+		transition: opacity 220ms ease;
+	}
+	.stat-card:hover {
+		border-color: rgba(245, 158, 11, 0.45);
+		transform: translateY(-3px);
+		box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(245, 158, 11, 0.12);
+	}
+	.stat-card:hover::before { opacity: 1; }
+
+	/* Tier card — the buy centerpiece. Featured variant gets a persistent glow. */
+	.tier-card {
+		position: relative;
+		background: linear-gradient(180deg, rgba(28, 25, 23, 0.7), rgba(10, 10, 10, 0.6));
+		border: 1px solid rgba(245, 158, 11, 0.18);
+		border-radius: 1.1rem;
+		transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), border-color 240ms ease, box-shadow 240ms ease;
+	}
+	.tier-card:hover {
+		transform: translateY(-6px) scale(1.015);
+		border-color: rgba(245, 158, 11, 0.6);
+		box-shadow: 0 22px 50px rgba(0, 0, 0, 0.55), 0 0 32px rgba(245, 158, 11, 0.18);
+	}
+	.tier-card-featured {
+		border-color: rgba(245, 158, 11, 0.55);
+		box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.35), 0 18px 44px rgba(0, 0, 0, 0.5), 0 0 40px rgba(245, 158, 11, 0.16);
+	}
+
+	/* Mono numerals that glow faintly — used for big headline figures. */
+	.figure-glow {
+		text-shadow: 0 0 24px rgba(245, 158, 11, 0.35);
+	}
+
+	/* Staggered entrance for dashboard sections. */
+	.fade-up {
+		opacity: 0;
+		transform: translateY(18px);
+		animation: fade-up-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+	}
+}
+
+@keyframes mesh-drift {
+	0%   { transform: translate(-6%, -4%) rotate(0deg); }
+	100% { transform: translate(6%, 4%) rotate(8deg); }
+}
+@keyframes fade-up-in {
+	to { opacity: 1; transform: none; }
+}
+@keyframes draw-line {
+	to { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.mesh-hero::before { animation: none; }
+	.fade-up { opacity: 1; transform: none; animation: none; }
+	.chart-line { stroke-dashoffset: 0 !important; animation: none !important; }
 }
 
 /* Radix Slider primitives */

@@ -5,64 +5,30 @@ export const BASE_KLC_PRICE = 0.0022;
 export const ANNUAL_KLC_TO_POOL = BLOCKS_PER_DAY * BLOCK_REWARD_KLC * DAYS_PER_YEAR; // 47,304,000 KLC/yr
 export const APR_FLOOR = 0.15;
 
-export type TierKey = 'light' | 'validator' | 'enterprise' | 'consortium' | 'genesis';
+// 8 packs — must match the on-chain tier indices (0..7) of the deployed VaultManager.
+export type TierKey =
+	| 'starter' | 'basic' | 'pro1k' | 'pro5k'
+	| 'premium10k' | 'premium25k' | 'elite50k' | 'whale100k';
 
 export interface Tier {
 	key: TierKey;
 	name: string;
 	price: number;
-	baseApr: number;
+	baseApr: number; // "Return %" — paid in KLC, sets the reward weight
 	audience: string;
 	featured: boolean;
 	accent: string;
 }
 
 export const TIERS: readonly Tier[] = [
-	{
-		key: 'light',
-		name: 'Light',
-		price: 100,
-		baseApr: 0.15,
-		audience: 'Everyone',
-		featured: false,
-		accent: '#fbbf24',
-	},
-	{
-		key: 'validator',
-		name: 'Validator',
-		price: 1000,
-		baseApr: 0.20,
-		audience: 'Crypto investors',
-		featured: true,
-		accent: '#f59e0b',
-	},
-	{
-		key: 'enterprise',
-		name: 'Enterprise',
-		price: 5000,
-		baseApr: 0.25,
-		audience: 'Fintechs & business',
-		featured: false,
-		accent: '#f59e0b',
-	},
-	{
-		key: 'consortium',
-		name: 'Consortium',
-		price: 25000,
-		baseApr: 0.30,
-		audience: 'Institutions',
-		featured: false,
-		accent: '#d97706',
-	},
-	{
-		key: 'genesis',
-		name: 'Genesis',
-		price: 100000,
-		baseApr: 0.35,
-		audience: 'Funds & whales',
-		featured: false,
-		accent: '#d97706',
-	},
+	{ key: 'starter',     name: 'Starter',     price: 50,     baseApr: 0.30, audience: 'Everyone',     featured: false, accent: '#fbbf24' },
+	{ key: 'basic',       name: 'Basic',       price: 100,    baseApr: 0.40, audience: 'Testers',      featured: false, accent: '#fbbf24' },
+	{ key: 'pro1k',       name: 'Pro 1K',      price: 1000,   baseApr: 0.50, audience: 'Investors',    featured: true,  accent: '#f59e0b' },
+	{ key: 'pro5k',       name: 'Pro 5K',      price: 5000,   baseApr: 0.60, audience: 'SMEs',         featured: false, accent: '#f59e0b' },
+	{ key: 'premium10k',  name: 'Premium 10K', price: 10000,  baseApr: 0.70, audience: 'Enterprises',  featured: false, accent: '#f59e0b' },
+	{ key: 'premium25k',  name: 'Premium 25K', price: 25000,  baseApr: 0.80, audience: 'Institutions', featured: false, accent: '#d97706' },
+	{ key: 'elite50k',    name: 'Elite 50K',   price: 50000,  baseApr: 1.00, audience: 'Funds',        featured: false, accent: '#d97706' },
+	{ key: 'whale100k',   name: 'Whale 100K',  price: 100000, baseApr: 1.40, audience: 'Whales',       featured: false, accent: '#d97706' },
 ] as const;
 
 export interface ProjectionInputs {
@@ -101,39 +67,40 @@ export function tierByKey(key: TierKey): Tier {
 }
 
 /** Stablecoins accepted as payment when purchasing a vault. */
-export const ACCEPTED_STABLES = ['USDT', 'USDC', 'DAI', 'KUSD'] as const;
+export const ACCEPTED_STABLES = ['USDT', 'KUSD'] as const;
 
-/** Total fees taken on purchase: 3% dev + 3% ambassador + 3% builders. */
-export const FEE_PCT = 0.09;
-/** Each individual fee leg (dev / ambassador / builders). */
-export const FEE_LEG_PCT = 0.03;
-/** Share of the purchase that becomes protocol-owned liquidity. */
-export const POL_PCT = 0.91;
-/** Half of the POL is swapped to KLC; the rest is kept as the stable side, both paired as permanent LP. */
-export const POL_TO_KLC_PCT = 0.5;
+/** 80/20 split. POL is locked permanent liquidity; the 20% funds growth + ops. */
+export const POL_PCT = 0.80;
+export const FEE_PCT = 0.20;
+/** Affiliate (3-level MLM): N1 6% + N2 2.5% + N3 1.5% = 10%, paid in the purchase stablecoin. */
+export const AFFILIATE_PCT = 0.10;
+export const N1_PCT = 0.06;
+export const N2_PCT = 0.025;
+export const N3_PCT = 0.015;
+/** Dev multisig (2%) and DAO treasury bucket (8% — builders/performers/marketing/stabilization/security). */
+export const DEV_PCT = 0.02;
+export const DAO_PCT = 0.08;
 /** Fixed worked example (USD) shown in the flow diagram. */
 export const FLOW_EXAMPLE_USD = 1000;
 
 export interface PurchaseSplit {
-	fees: number;
-	dev: number;
-	ambassador: number;
-	builders: number;
 	pol: number;
-	polToKlc: number;
-	polToLp: number;
+	fees: number;
+	affiliate: number;
+	dev: number;
+	dao: number;
 }
 
 /**
- * Break a vault purchase into its on-chain destinations.
- * 9% fees (three equal legs) + 91% protocol-owned liquidity (half swapped to KLC,
- * half kept as the stable side, both paired into permanent LP).
+ * Break a vault purchase into its on-chain destinations (80/20 + 3-level MLM).
+ * 80% permanent liquidity; 20% = 10% affiliate (N1/N2/N3) + 2% dev + 8% DAO treasury.
  */
 export function splitPurchase(amountUsd: number): PurchaseSplit {
-	const leg = amountUsd * FEE_LEG_PCT;
-	const fees = amountUsd * FEE_PCT;
-	const pol = amountUsd * POL_PCT;
-	const polToKlc = pol * POL_TO_KLC_PCT;
-	const polToLp = pol - polToKlc;
-	return { fees, dev: leg, ambassador: leg, builders: leg, pol, polToKlc, polToLp };
+	return {
+		pol: amountUsd * POL_PCT,
+		fees: amountUsd * FEE_PCT,
+		affiliate: amountUsd * AFFILIATE_PCT,
+		dev: amountUsd * DEV_PCT,
+		dao: amountUsd * DAO_PCT,
+	};
 }

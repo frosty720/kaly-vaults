@@ -12,7 +12,7 @@ interface ScalingCalloutProps {
 }
 
 export function ScalingCallout({ dict, locale, klcPrice = BASE_KLC_PRICE }: ScalingCalloutProps) {
-	const genesis = tierByKey('genesis');
+	const genesis = tierByKey('whale100k');
 	const at2x = project({ investmentUsd: genesis.price, baseApr: genesis.baseApr, priceMultiplier: 2 });
 	const at5x = project({ investmentUsd: genesis.price, baseApr: genesis.baseApr, priceMultiplier: 5 });
 	const at10x = project({ investmentUsd: genesis.price, baseApr: genesis.baseApr, priceMultiplier: 10 });
