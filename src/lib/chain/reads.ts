@@ -8,18 +8,24 @@ import { rewardsPoolAbi, vaultManagerAbi, positionManagerAbi, v3PoolAbi } from '
 import { getOwnedVaultTokenIds, getPurchases, getTreasuryPositionIds } from './events';
 import { klcUsdFromSlot0, positionTokenAmounts, positionUsdValue } from './pol';
 import { getAffiliateEvents, affiliateStats, leaderboard } from './affiliate';
+import { fetchProtocolTotals, fetchPolHistory, fetchAffiliateGraph, fetchPoolTvl, fetchKlcPriceV3, hasSubgraph } from './subgraph';
 import { getKlcPrice, isValidKlcPrice } from '@/lib/price';
 
 const A = getAddresses(ACTIVE_NETWORK);
 
-/** Shared scan of SponsorSet + FeesRouted events; both affiliate hooks derive from this. */
+/**
+ * Sponsor edges + commission legs feeding both affiliate hooks. Prefers the subgraph (one query,
+ * decimal-correct) and falls back to the RPC SponsorSet/FeesRouted scan on networks without one.
+ * Either source returns the same { edges, legs, head } shape.
+ */
 function useAffiliateEvents() {
 	const client = usePublicClient();
 	return useQuery({
 		queryKey: ['affiliateEvents', ACTIVE_NETWORK],
-		enabled: !!client && !!A.vaultManager,
+		enabled: hasSubgraph || (!!client && !!A.vaultManager),
 		refetchInterval: 30000,
-		queryFn: () => getAffiliateEvents(client!, A.vaultManager!, A.deployBlock),
+		queryFn: () =>
+			hasSubgraph ? fetchAffiliateGraph() : getAffiliateEvents(client!, A.vaultManager!, A.deployBlock),
 	});
 }
 
@@ -99,6 +105,9 @@ export function useKlcPrice() {
 		queryKey: ['klcPrice', ACTIVE_NETWORK],
 		refetchInterval: 60000,
 		queryFn: async () => {
+			// Prefer the V3 subgraph (bundle.ethPriceUSD); then on-chain anchor pool; then off-chain.
+			const v3 = await fetchKlcPriceV3().catch(() => null);
+			if (v3 !== null) return v3;
 			if (client) {
 				try {
 					const onchain = await klcUsdFromAnchorPool(client as unknown as PublicClient);
@@ -109,6 +118,20 @@ export function useKlcPrice() {
 			}
 			return getKlcPrice();
 		},
+	});
+}
+
+/**
+ * Whole-pool TVL of the KLC/stable vault pools (everyone's liquidity) from the V3 subgraph — shown
+ * as a "Total Pool Liquidity" stat, distinct from protocol-OWNED liquidity (usePolStats, the DAO's
+ * own positions). Subgraph-only; returns undefined where there's no V3 subgraph.
+ */
+export function usePoolTvl() {
+	return useQuery({
+		queryKey: ['poolTvl', ACTIVE_NETWORK],
+		staleTime: 30_000,
+		refetchInterval: 60_000,
+		queryFn: () => fetchPoolTvl(),
 	});
 }
 
@@ -209,12 +232,21 @@ export function useProtocolStats() {
 		enabled: !!client && !!A.vaultManager,
 		refetchInterval: 30000,
 		queryFn: async () => {
-			const purchases = await getPurchases(client!, A.vaultManager!, A.deployBlock);
+			// Deposited + minted: prefer the subgraph (one query) over an RPC log scan from deployBlock.
 			let totalDepositedUsd = 0;
-			for (const p of purchases) {
-				const stable = Object.values(A.stables).find((s) => s.address.toLowerCase() === p.stable.toLowerCase());
-				if (!stable) continue; // unknown stable → skip rather than guess
-				totalDepositedUsd += Number(p.paid) / 10 ** stable.decimals;
+			let vaultsMinted = 0;
+			if (hasSubgraph) {
+				const totals = await fetchProtocolTotals();
+				totalDepositedUsd = totals.totalDepositedUsd;
+				vaultsMinted = totals.vaultsMinted;
+			} else {
+				const purchases = await getPurchases(client!, A.vaultManager!, A.deployBlock);
+				for (const p of purchases) {
+					const stable = Object.values(A.stables).find((s) => s.address.toLowerCase() === p.stable.toLowerCase());
+					if (!stable) continue; // unknown stable → skip rather than guess
+					totalDepositedUsd += Number(p.paid) / 10 ** stable.decimals;
+				}
+				vaultsMinted = purchases.length;
 			}
 			// Read active tier APRs straight from the contract (aprBps → %).
 			const aprs: number[] = [];
@@ -231,11 +263,26 @@ export function useProtocolStats() {
 			}
 			return {
 				totalDepositedUsd,
-				vaultsMinted: purchases.length,
+				vaultsMinted,
 				aprMinPct: aprs.length ? Math.min(...aprs) : 0,
 				aprMaxPct: aprs.length ? Math.max(...aprs) : 0,
 			};
 		},
+	});
+}
+
+/**
+ * Cumulative POL-added history (USD at deposit) from the subgraph — the trend line for the POL
+ * hero. Subgraph-only (returns [] on networks without one); cached + refetched on an interval so
+ * it never blocks the page. The live headline value stays on RPC (usePolStats).
+ */
+export function usePolHistory() {
+	return useQuery({
+		queryKey: ['polHistory', ACTIVE_NETWORK],
+		enabled: hasSubgraph,
+		staleTime: 60_000,
+		refetchInterval: 120_000,
+		queryFn: () => fetchPolHistory(),
 	});
 }
 

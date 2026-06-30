@@ -1,15 +1,20 @@
 'use client';
 
-import { usePolStats, useKlcPrice } from '@/lib/chain/reads';
+import { usePolStats, useKlcPrice, usePolHistory, usePoolTvl } from '@/lib/chain/reads';
 import { fmtUsd } from '@/lib/format';
 import { Skeleton } from './Skeleton';
 import { LiveBadge } from './LiveBadge';
 import { AnimatedNumber } from './AnimatedNumber';
+import { AreaChart } from './AreaChart';
 import type { Dictionary } from '@/i18n/dictionaries/en';
 
 export function PolHero({ t }: { t: Dictionary['app']['pol'] }) {
 	const { data, isLoading, isError } = usePolStats();
 	const { data: klcPrice } = useKlcPrice();
+	// Cumulative POL-added trend from the subgraph (fast; doesn't block the live headline above).
+	const { data: history } = usePolHistory();
+	// Whole-pool TVL (everyone's liquidity) — shown alongside, NOT as protocol-owned.
+	const { data: poolTvl } = usePoolTvl();
 
 	// Per-pool live LP value from on-chain position enumeration
 	const poolBreakdown = data?.perPool ?? [];
@@ -44,6 +49,13 @@ export function PolHero({ t }: { t: Dictionary['app']['pol'] }) {
 				)}
 			</div>
 
+			{/* Cumulative POL trend (subgraph) — only shown once there's a couple of data points */}
+			{history && history.length > 1 && (
+				<div className="relative mb-5">
+					<AreaChart points={history} emptyLabel={t.empty} />
+				</div>
+			)}
+
 			{/* Per-pool breakdown chips */}
 			{!isLoading && !isError && poolBreakdown.length > 0 && (
 				<div className="relative flex flex-wrap gap-2 mb-4">
@@ -56,6 +68,14 @@ export function PolHero({ t }: { t: Dictionary['app']['pol'] }) {
 							<span className="tabular-nums font-semibold text-amber-200/90">{fmtUsd(usd)}</span>
 						</span>
 					))}
+				</div>
+			)}
+
+			{/* Total pool liquidity (whole pool, from the V3 subgraph) — context for the owned figure */}
+			{poolTvl && poolTvl.totalUsd > 0 && (
+				<div className="relative mb-4 flex items-baseline gap-2 text-xs">
+					<span className="text-white/45">{t.totalPool}</span>
+					<span className="tabular-nums font-semibold text-white/80">{fmtUsd(poolTvl.totalUsd)}</span>
 				</div>
 			)}
 

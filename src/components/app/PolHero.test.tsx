@@ -15,6 +15,8 @@ import { describe, it, expect, vi } from 'vitest';
 vi.mock('@/lib/chain/reads', () => ({
 	usePolStats: () => ({ isLoading: true, isError: false, data: undefined }),
 	useKlcPrice: () => ({ data: undefined }),
+	usePolHistory: () => ({ data: undefined }),
+	usePoolTvl: () => ({ data: undefined }),
 }));
 
 vi.mock('@rainbow-me/rainbowkit', () => ({
