@@ -419,3 +419,26 @@ input[type='number'] {
 		width: 91%;
 	}
 }
+
+/* thirdweb wallet modal hides its scrollbar (scrollbar-width:none + ::-webkit-scrollbar
+   display:none) on the scrollable asset/token list, so users can't tell there are more
+   tokens below the fold. Re-enable a visible amber scrollbar, scoped to the modal. */
+.tw-modal ::-webkit-scrollbar {
+	width: 8px !important;
+	height: 8px !important;
+	display: block !important;
+}
+.tw-modal ::-webkit-scrollbar-thumb {
+	background: rgba(245, 158, 11, 0.55) !important;
+	border-radius: 8px !important;
+}
+.tw-modal ::-webkit-scrollbar-thumb:hover {
+	background: rgba(245, 158, 11, 0.85) !important;
+}
+.tw-modal ::-webkit-scrollbar-track {
+	background: rgba(255, 255, 255, 0.05) !important;
+}
+.tw-modal * {
+	scrollbar-width: thin !important;
+	scrollbar-color: rgba(245, 158, 11, 0.55) transparent !important;
+}
