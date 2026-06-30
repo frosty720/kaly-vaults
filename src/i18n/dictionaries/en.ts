@@ -2,7 +2,7 @@ const en = {
 	meta: {
 		title: 'KalyChain Vault — Earn passive KLC backed by the chain',
 		description:
-			'Every block KalyChain produces flows directly to Vault holders. Buy once, earn forever. The sale is live — buy a pack and start earning every block.',
+			'Every block KalyChain produces flows directly to Vault holders. Buy once, earn passive KLC. The sale is live — buy a pack and start earning every block.',
 		ogDescription:
 			'Every block KalyChain produces flows directly to Vault holders. Eight packs from $50 to $100k, scaling with KLC price.',
 	},
@@ -23,7 +23,7 @@ const en = {
 		headlineAccent: 'passive KLC',
 		headlineAfter: 'backed by the chain itself',
 		subhead:
-			'Every block KalyChain produces flows directly to Vault holders. Buy once, earn forever. The sale is live — pick a pack and start earning every block.',
+			'Every block KalyChain produces flows directly to Vault holders. Buy once, earn passive KLC. The sale is live — pick a pack and start earning every block.',
 		stats: {
 			blocksPerDay: 'Blocks per day',
 			rewardPerBlock: 'Reward per block',
