@@ -46,14 +46,9 @@ export function Nav({ dict, locale, appMode = false, rightActions }: NavProps) {
 					{appMode ? (
 						rightActions
 					) : (
-						<>
-							<Link href={`/${locale}/app`} className="btn-ghost px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm">
-								{dict.nav.launchApp}
-							</Link>
-							<a href="#waitlist" className="btn-primary px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm">
-								{dict.nav.joinWaitlist}
-							</a>
-						</>
+						<Link href={`/${locale}/app`} className="btn-primary px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm">
+							{dict.nav.launchApp}
+						</Link>
 					)}
 				</div>
 			</nav>

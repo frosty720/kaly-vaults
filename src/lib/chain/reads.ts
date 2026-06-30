@@ -131,6 +131,10 @@ export function useVaults(addr?: `0x${string}`) {
 		enabled: !!addr && !!client && !!A.vaultManager,
 		queryFn: async () => {
 			const ids = await getOwnedVaultTokenIds(client!, A.vaultManager!, addr!, A.deployBlock);
+			// Live USD-per-KLC straight from the contract (same price it uses to settle maturity),
+			// so the maturity bar reflects what's actually been earned rather than the last-checkpointed
+			// value (which only updates on claim, leaving an unclaimed-but-capped vault showing 0%).
+			const klcUsd = await client!.readContract({ address: A.vaultManager!, abi: vaultManagerAbi, functionName: 'klcUsdPrice' }) as bigint;
 			const out: VaultData[] = [];
 			for (const id of ids) {
 				const owner = await client!.readContract({ address: A.vaultManager!, abi: vaultManagerAbi, functionName: 'ownerOf', args: [id] });
@@ -154,9 +158,17 @@ export function useVaults(addr?: `0x${string}`) {
 					? await client!.readContract({ address: A.rewardsPool!, abi: rewardsPoolAbi, functionName: 'isMatured', args: [id] }) as boolean
 					: false;
 
-				const maturityPct = capUsd > 0n ? Number(earnedUsd * 10000n / capUsd) / 100 : 0;
+				// Live earned-USD toward the cap = checkpointed earnedUsd + the live unclaimed KLC valued
+				// at the contract's klcUsdPrice. `earned()` already caps the KLC at the remaining USD, so
+				// this never overshoots the cap. Clamp defensively anyway.
+				let liveEarnedUsd = earnedUsd + (earnedKlc * klcUsd) / 10n ** 18n;
+				if (capUsd > 0n && liveEarnedUsd > capUsd) liveEarnedUsd = capUsd;
+				const maturityPct = capUsd > 0n ? Number(liveEarnedUsd * 10000n / capUsd) / 100 : 0;
+				// A vault that has earned its full cap is effectively matured even before the on-chain
+				// `matured` flag flips (it only flips on the next claim/checkpoint).
+				const maturedLive = matured || (capUsd > 0n && liveEarnedUsd >= capUsd);
 
-				out.push({ id, tier: Number(tier), weight: t[2] as bigint, earnedKlc, earnedUsd, capUsd, matured, maturityPct });
+				out.push({ id, tier: Number(tier), weight: t[2] as bigint, earnedKlc, earnedUsd, capUsd, matured: maturedLive, maturityPct });
 			}
 			return out;
 		},
