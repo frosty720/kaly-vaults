@@ -4,7 +4,7 @@ const fr: Dictionary = {
 	meta: {
 		title: 'Coffre-fort KalyChain — Gagnez du KLC passif adossé à la chaîne',
 		description:
-			'Chaque bloc produit par KalyChain est reversé directement aux détenteurs du Coffre. Achetez une fois, gagnez pour toujours. Inscrivez-vous à la liste d\'attente pour bloquer un prix anticipé et le meilleur APR avant le lancement public.',
+			'Chaque bloc produit par KalyChain est reversé directement aux détenteurs du Coffre. Achetez une fois, gagnez pour toujours. La vente est en direct — achetez un pack et commencez à gagner à chaque bloc.',
 		ogDescription:
 			'Chaque bloc produit par KalyChain va directement aux détenteurs du Coffre. Huit packs de 50 $ à 100 000 $, qui augmentent avec le prix du KLC.',
 	},
@@ -20,12 +20,12 @@ const fr: Dictionary = {
 	},
 
 	hero: {
-		badge: 'Liste d\'attente du Coffre ouverte',
+		badge: 'Vente du Coffre en direct',
 		headlineBefore: 'Gagnez',
 		headlineAccent: 'du KLC passif',
 		headlineAfter: 'adossé à la chaîne elle-même',
 		subhead:
-			'Chaque bloc produit par KalyChain est reversé directement aux détenteurs du Coffre. Achetez une fois, gagnez pour toujours. Les inscrits anticipés bloquent l\'APR le plus élevé avant le lancement public.',
+			'Chaque bloc produit par KalyChain est reversé directement aux détenteurs du Coffre. Achetez une fois, gagnez pour toujours. La vente est en direct — choisissez un pack et commencez à gagner à chaque bloc.',
 		stats: {
 			blocksPerDay: 'Blocs par jour',
 			rewardPerBlock: 'Récompense par bloc',
@@ -69,7 +69,7 @@ const fr: Dictionary = {
 	},
 
 	tiers: {
-		sectionTitle: 'Les cinq paliers du Coffre',
+		sectionTitle: 'Les 8 paliers du Coffre',
 		valuesShownAt: 'Valeurs affichées à',
 		klcPriceSuffix: 'du prix du KLC',
 		mostPopular: 'Le plus populaire',
