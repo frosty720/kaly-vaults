@@ -187,6 +187,7 @@ const en = {
 			label: 'Protocol-Owned Liquidity',
 			liveValue: 'live value',
 			live: 'live',
+			totalPool: 'Total pool liquidity',
 			error: 'Couldn\'t load POL data',
 			empty: 'No POL deposits yet',
 			added: 'added',

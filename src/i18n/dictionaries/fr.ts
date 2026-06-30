@@ -182,6 +182,7 @@ const fr: Dictionary = {
 			label: 'Liquidité détenue par le protocole',
 			liveValue: 'valeur en direct',
 			live: 'en direct',
+			totalPool: 'Liquidité totale des pools',
 			error: 'Impossible de charger les données POL',
 			empty: 'Aucun dépôt POL pour l\'instant',
 			added: 'ajouté',
