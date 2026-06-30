@@ -2,7 +2,7 @@ const en = {
 	meta: {
 		title: 'KalyChain Vault — Earn passive KLC backed by the chain',
 		description:
-			'Every block KalyChain produces flows directly to Vault holders. Buy once, earn forever. Join the waitlist to lock in early pricing and the highest APR before public launch.',
+			'Every block KalyChain produces flows directly to Vault holders. Buy once, earn forever. The sale is live — buy a pack and start earning every block.',
 		ogDescription:
 			'Every block KalyChain produces flows directly to Vault holders. Eight packs from $50 to $100k, scaling with KLC price.',
 	},
@@ -18,12 +18,12 @@ const en = {
 	},
 
 	hero: {
-		badge: 'Vault Waitlist Now Open',
+		badge: 'Vault Sale Now Live',
 		headlineBefore: 'Earn',
 		headlineAccent: 'passive KLC',
 		headlineAfter: 'backed by the chain itself',
 		subhead:
-			'Every block KalyChain produces flows directly to Vault holders. Buy once, earn forever. Early waitlist members lock in the highest APR before public launch.',
+			'Every block KalyChain produces flows directly to Vault holders. Buy once, earn forever. The sale is live — pick a pack and start earning every block.',
 		stats: {
 			blocksPerDay: 'Blocks per day',
 			rewardPerBlock: 'Reward per block',
@@ -69,7 +69,7 @@ const en = {
 	},
 
 	tiers: {
-		sectionTitle: 'The Five Vault Tiers',
+		sectionTitle: 'The 8 Vault Tiers',
 		valuesShownAt: 'All values shown at',
 		klcPriceSuffix: 'KLC price',
 		mostPopular: 'Most Popular',
