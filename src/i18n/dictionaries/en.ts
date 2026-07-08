@@ -244,6 +244,7 @@ const en = {
 			buy: 'Buy {name} Vault',
 			buying: 'Buying…',
 			cancel: 'Cancel',
+			txReverted: 'The transaction was rejected on-chain — you were not charged. Please try again in a moment.',
 		},
 		position: {
 			title: 'Your Position',

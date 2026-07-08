@@ -8,6 +8,7 @@ import { getAddresses } from '@/lib/chain/addresses';
 import { ACTIVE_NETWORK } from '@/lib/chain/chains';
 import { erc20Abi } from '@/lib/chain/abis';
 import { useApprove, usePurchase } from '@/lib/chain/writes';
+import { waitForSuccess, TxRevertedError } from '@/lib/chain/receipt';
 import { purchaseAmount } from '@/lib/chain/buy';
 import { fmtUsd } from '@/lib/format';
 import { interpolate } from '@/lib/utils';
@@ -86,6 +87,7 @@ export function BuyModal({ tierIndex, addr, onClose, onPurchased, t }: BuyModalP
 	}
 
 	function errMsg(e: unknown): string {
+		if (e instanceof TxRevertedError) return t.txReverted;
 		const x = e as { shortMessage?: string; message?: string };
 		return x?.shortMessage || x?.message || 'Transaction failed';
 	}
@@ -95,9 +97,10 @@ export function BuyModal({ tierIndex, addr, onClose, onPurchased, t }: BuyModalP
 		setApproving(true);
 		try {
 			// writeContractAsync resolves on SUBMISSION, not on mine — wait for the receipt
-			// before re-reading allowance, otherwise the button never advances to "Buy".
+			// (and require status success) before re-reading allowance, otherwise the
+			// button never advances to "Buy".
 			const hash = await approve(stableInfo.address, amount);
-			if (publicClient && hash) await publicClient.waitForTransactionReceipt({ hash, timeout: 90_000 });
+			if (publicClient && hash) await waitForSuccess(publicClient, hash);
 			await refetchAllowance();
 		} catch (e) {
 			setTxError(errMsg(e));
@@ -112,8 +115,9 @@ export function BuyModal({ tierIndex, addr, onClose, onPurchased, t }: BuyModalP
 		try {
 			const deadline = BigInt(Math.floor(Date.now() / 1000) + 600);
 			const hash = await buy(tierIndex, stableInfo.address, deadline, referrer);
-			// Only show success once the purchase is actually mined.
-			if (publicClient && hash) await publicClient.waitForTransactionReceipt({ hash, timeout: 90_000 });
+			// Only show success once the purchase is mined AND has status success —
+			// a mined-but-reverted buy must land in the catch path, not the success screen.
+			if (publicClient && hash) await waitForSuccess(publicClient, hash);
 			setPurchased(true);
 			onPurchased();
 			// Short pause so user sees the success state before modal closes

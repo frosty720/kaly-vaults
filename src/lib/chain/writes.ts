@@ -4,6 +4,7 @@ import { useWriteContract, usePublicClient } from 'wagmi';
 import { getAddresses } from './addresses';
 import { ACTIVE_NETWORK } from './chains';
 import { erc20Abi, vaultManagerAbi, rewardsPoolAbi } from './abis';
+import { waitForSuccess } from './receipt';
 
 const A = getAddresses(ACTIVE_NETWORK);
 
@@ -48,14 +49,16 @@ export function useClaim() {
 	const client = usePublicClient();
 	const [isConfirming, setIsConfirming] = useState(false);
 	// v2 RewardsPool: per-vault claimMany(uint256[] tokenIds).
-	// Wait for the receipt before resolving so the caller's refetch reads POST-claim state
-	// (otherwise the UI briefly shows the stale pre-claim "claimable" until the next poll).
+	// Wait for the receipt (and require status success — a mined-but-reverted claim
+	// must throw, not resolve) before resolving so the caller's refetch reads
+	// POST-claim state (otherwise the UI briefly shows the stale pre-claim
+	// "claimable" until the next poll).
 	const claim = async (ids: bigint[]) => {
 		const hash = await writeContractAsync({ address: A.rewardsPool!, abi: rewardsPoolAbi, functionName: 'claimMany', args: [ids], gas: GAS_CLAIM, ...FEES });
 		if (client) {
 			setIsConfirming(true);
 			try {
-				await client.waitForTransactionReceipt({ hash });
+				await waitForSuccess(client, hash);
 			} finally {
 				setIsConfirming(false);
 			}
