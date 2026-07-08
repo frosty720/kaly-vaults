@@ -239,6 +239,7 @@ const fr: Dictionary = {
 			buy: 'Acheter le coffre {name}',
 			buying: 'Achat…',
 			cancel: 'Annuler',
+			txReverted: 'La transaction a été rejetée sur la chaîne — vous n\'avez pas été débité. Veuillez réessayer dans un instant.',
 		},
 		position: {
 			title: 'Votre position',
