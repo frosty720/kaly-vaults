@@ -131,12 +131,15 @@ const ZERO_ADDR = '0x0000000000000000000000000000000000000000';
 
 export async function fetchAffiliateGraph(): Promise<{ edges: SponsorEdge[]; legs: FeeLeg[]; head: bigint }> {
 	if (!hasSubgraph) return { edges: [], legs: [], head: 0n };
+	// buyer/level1/2/3 are Account ENTITY REFERENCES — they MUST be queried with a selection
+	// set ({ address }). Queried as scalars, graph-node silently OMITS them from the response
+	// (no error), which nulled every commission leg and made the leaderboard show $0.00.
 	const data = await gql<{
 		_meta: { block: { number: number; timestamp: number } };
 		accounts: { address: string; sponsor: { address: string } | null }[];
 		commissions: {
-			buyer: string; stable: string;
-			level1: string; level2: string; level3: string;
+			buyer: { address: string }; stable: string;
+			level1: { address: string } | null; level2: { address: string } | null; level3: { address: string } | null;
 			amount1: string; amount2: string; amount3: string; timestamp: string;
 		}[];
 	}>(
@@ -144,7 +147,9 @@ export async function fetchAffiliateGraph(): Promise<{ edges: SponsorEdge[]; leg
 			_meta { block { number timestamp } }
 			accounts(first: $first) { address sponsor { address } }
 			commissions(first: $first, orderBy: timestamp, orderDirection: asc) {
-				buyer stable level1 level2 level3 amount1 amount2 amount3 timestamp
+				buyer { address } stable
+				level1 { address } level2 { address } level3 { address }
+				amount1 amount2 amount3 timestamp
 			}
 		}`,
 		{ first: 1000 },
@@ -164,14 +169,16 @@ export async function fetchAffiliateGraph(): Promise<{ edges: SponsorEdge[]; leg
 	for (const c of data.commissions) {
 		const dec = decimalsFor(c.stable);
 		const block = tsToBlock(Number(c.timestamp));
-		const tiers: [string, string, 1 | 2 | 3][] = [
-			[c.level1, c.amount1, 1],
-			[c.level2, c.amount2, 2],
-			[c.level3, c.amount3, 3],
+		// amount1/2/3 are stored even when the level is unqualified (leg rolled to the DAO,
+		// level address null/zero) — the address guard below is what excludes those.
+		const tiers: [string | undefined, string, 1 | 2 | 3][] = [
+			[c.level1?.address, c.amount1, 1],
+			[c.level2?.address, c.amount2, 2],
+			[c.level3?.address, c.amount3, 3],
 		];
 		for (const [addr, amt, level] of tiers) {
 			if (addr && addr.toLowerCase() !== ZERO_ADDR && Number(amt) > 0) {
-				legs.push({ affiliate: addr.toLowerCase(), level, usd: Number(amt) / 10 ** dec, buyer: c.buyer.toLowerCase(), block });
+				legs.push({ affiliate: addr.toLowerCase(), level, usd: Number(amt) / 10 ** dec, buyer: c.buyer.address.toLowerCase(), block });
 			}
 		}
 	}
