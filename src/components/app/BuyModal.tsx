@@ -1,14 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { useReadContract, usePublicClient } from 'wagmi';
+import { useReadContract, usePublicClient, useAccount } from 'wagmi';
 import { isAddress } from 'viem';
 import { TIERS, splitPurchase } from '@/lib/tiers';
 import { getAddresses } from '@/lib/chain/addresses';
 import { ACTIVE_NETWORK } from '@/lib/chain/chains';
 import { erc20Abi } from '@/lib/chain/abis';
 import { useApprove, usePurchase } from '@/lib/chain/writes';
-import { waitForSuccess, TxRevertedError } from '@/lib/chain/receipt';
+import { waitForSuccess } from '@/lib/chain/receipt';
+import { txErrorMessage } from '@/lib/chain/txError';
 import { purchaseAmount } from '@/lib/chain/buy';
 import { fmtUsd } from '@/lib/format';
 import { interpolate } from '@/lib/utils';
@@ -42,6 +43,13 @@ export function BuyModal({ tierIndex, addr, onClose, onPurchased, t }: BuyModalP
 	const [buying, setBuying] = useState(false);
 	const [txError, setTxError] = useState('');
 	const publicClient = usePublicClient();
+	// Wallet connection is driven by thirdweb's ConnectButton, but every write goes
+	// through wagmi — thirdwebBridge.ts syncs one into the other and that sync can lag
+	// or retry. While it hasn't landed, wagmi has no wallet to sign with and the write
+	// escapes to the plain RPC transport, where our Besu node answers
+	// "eth_sendTransaction is not supported" (it holds no keys). Gate the actions on
+	// wagmi's own connection state, not thirdweb's, so that window isn't clickable.
+	const { isConnected: signerReady } = useAccount();
 
 	const stableInfo = A.stables[selectedStable];
 	const vaultManager = A.vaultManager!;
@@ -87,13 +95,12 @@ export function BuyModal({ tierIndex, addr, onClose, onPurchased, t }: BuyModalP
 	}
 
 	function errMsg(e: unknown): string {
-		if (e instanceof TxRevertedError) return t.txReverted;
-		const x = e as { shortMessage?: string; message?: string };
-		return x?.shortMessage || x?.message || 'Transaction failed';
+		return txErrorMessage(e, { reverted: t.txReverted, walletNotReady: t.walletNotReady });
 	}
 
 	async function handleApprove() {
 		setTxError('');
+		if (!signerReady) return setTxError(t.walletNotReady);
 		setApproving(true);
 		try {
 			// writeContractAsync resolves on SUBMISSION, not on mine — wait for the receipt
@@ -111,6 +118,7 @@ export function BuyModal({ tierIndex, addr, onClose, onPurchased, t }: BuyModalP
 
 	async function handleBuy() {
 		setTxError('');
+		if (!signerReady) return setTxError(t.walletNotReady);
 		setBuying(true);
 		try {
 			const deadline = BigInt(Math.floor(Date.now() / 1000) + 600);
@@ -240,7 +248,15 @@ export function BuyModal({ tierIndex, addr, onClose, onPurchased, t }: BuyModalP
 									{txError}
 								</p>
 							)}
-							{allowanceLoading ? (
+							{!signerReady ? (
+								<button
+									type="button"
+									disabled
+									className="btn-ghost w-full rounded-lg px-4 py-3 text-sm font-semibold"
+								>
+									{t.walletSyncing}
+								</button>
+							) : allowanceLoading ? (
 								<button
 									type="button"
 									disabled

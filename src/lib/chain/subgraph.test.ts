@@ -30,14 +30,18 @@ describe('fetchAffiliateGraph', () => {
 			accounts: [{ address: BUYER, sponsor: { address: AFF2 } }],
 			commissions: [
 				{
+					// $100 pack: dev $2, DAO base $8 + the unpaid L3 $1.50 = $9.50.
 					buyer: { address: BUYER }, stable: USDT,
 					level1: { address: AFF2 }, level2: { address: AFF1 }, level3: null,
-					amount1: '6000000', amount2: '2500000', amount3: '1500000', timestamp: '1782852408',
+					amount1: '6000000', amount2: '2500000', amount3: '1500000',
+					devAmount: '2000000', daoAmount: '9500000', timestamp: '1782852408',
 				},
 				{
+					// $50 pack: dev $1, DAO base $4 + the unpaid L2 $1.25 + L3 $0.75 = $6.
 					buyer: { address: BUYER }, stable: KUSD,
 					level1: { address: AFF1 }, level2: null, level3: null,
 					amount1: '3000000000000000000', amount2: '1250000000000000000', amount3: '750000000000000000',
+					devAmount: '1000000000000000000', daoAmount: '6000000000000000000',
 					timestamp: '1782852540',
 				},
 			],
@@ -76,11 +80,38 @@ describe('fetchAffiliateGraph', () => {
 				{
 					buyer: { address: BUYER }, stable: USDT,
 					level1: { address: '0x0000000000000000000000000000000000000000' }, level2: { address: AFF1 }, level3: null,
-					amount1: '6000000', amount2: '0', amount3: '0', timestamp: '1782852408',
+					amount1: '6000000', amount2: '0', amount3: '0',
+					devAmount: '2000000', daoAmount: '8000000', timestamp: '1782852408',
 				},
 			],
 		});
 		const { legs } = await fetchAffiliateGraph();
 		expect(legs).toEqual([]);
+	});
+
+	// Regression: mainnet tx 0xf3ca68e3…ba19e (block ~52.0M). FeesRouted named 0xff3c… as level2
+	// with a $25 amount, but that address held no vault at the time, so the $25 was transferred to
+	// the DAO treasury — verified against the ERC20 Transfers in that tx (N1 $60, dev $20, DAO $120;
+	// nothing to 0xff3c…). The dashboard used to credit it as earned.
+	it('excludes a named-but-unqualified level whose commission rolled to the DAO', async () => {
+		const L1 = '0x44a0c354add28225c8722f4f0e5f59ab552b56d5';
+		const UNQUALIFIED = '0xff3c9793ef3996bbb5f9b811d31c12ff3c99e287';
+		stubGraphResponse({
+			_meta: { block: { number: 52000000, timestamp: 1783442209 } },
+			accounts: [],
+			commissions: [
+				{
+					buyer: { address: BUYER }, stable: USDT,
+					level1: { address: L1 }, level2: { address: UNQUALIFIED }, level3: null,
+					amount1: '60000000', amount2: '25000000', amount3: '15000000',
+					// DAO $120 = $80 base + the unpaid L2 $25 + the empty L3 $15.
+					devAmount: '20000000', daoAmount: '120000000', timestamp: '1783442209',
+				},
+			],
+		});
+		const { legs } = await fetchAffiliateGraph();
+		expect(legs).toHaveLength(1);
+		expect(legs[0]).toMatchObject({ affiliate: L1, level: 1, usd: 60 });
+		expect(legs.some((l) => l.affiliate === UNQUALIFIED)).toBe(false);
 	});
 });

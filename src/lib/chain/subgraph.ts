@@ -1,7 +1,8 @@
 import { ACTIVE_NETWORK } from './chains';
 import { getAddresses } from './addresses';
 import type { NetworkName } from './chains';
-import type { SponsorEdge, FeeLeg } from './affiliate';
+import type { SponsorEdge, FeeLeg, FeeSplit } from './affiliate';
+import { paidLegs, DEFAULT_FEE_SPLIT } from './affiliate';
 
 /**
  * Vault subgraph (The Graph) reads. The subgraph indexes events into entities, so it's the fast
@@ -129,7 +130,7 @@ export async function fetchPolHistory(): Promise<PolPoint[]> {
  */
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000';
 
-export async function fetchAffiliateGraph(): Promise<{ edges: SponsorEdge[]; legs: FeeLeg[]; head: bigint }> {
+export async function fetchAffiliateGraph(split: FeeSplit = DEFAULT_FEE_SPLIT): Promise<{ edges: SponsorEdge[]; legs: FeeLeg[]; head: bigint }> {
 	if (!hasSubgraph) return { edges: [], legs: [], head: 0n };
 	// buyer/level1/2/3 are Account ENTITY REFERENCES — they MUST be queried with a selection
 	// set ({ address }). Queried as scalars, graph-node silently OMITS them from the response
@@ -140,7 +141,7 @@ export async function fetchAffiliateGraph(): Promise<{ edges: SponsorEdge[]; leg
 		commissions: {
 			buyer: { address: string }; stable: string;
 			level1: { address: string } | null; level2: { address: string } | null; level3: { address: string } | null;
-			amount1: string; amount2: string; amount3: string; timestamp: string;
+			amount1: string; amount2: string; amount3: string; devAmount: string; daoAmount: string; timestamp: string;
 		}[];
 	}>(
 		`query AffiliateGraph($first: Int!) {
@@ -149,7 +150,7 @@ export async function fetchAffiliateGraph(): Promise<{ edges: SponsorEdge[]; leg
 			commissions(first: $first, orderBy: timestamp, orderDirection: asc) {
 				buyer { address } stable
 				level1 { address } level2 { address } level3 { address }
-				amount1 amount2 amount3 timestamp
+				amount1 amount2 amount3 devAmount daoAmount timestamp
 			}
 		}`,
 		{ first: 1000 },
@@ -169,15 +170,19 @@ export async function fetchAffiliateGraph(): Promise<{ edges: SponsorEdge[]; leg
 	for (const c of data.commissions) {
 		const dec = decimalsFor(c.stable);
 		const block = tsToBlock(Number(c.timestamp));
-		// amount1/2/3 are stored even when the level is unqualified (leg rolled to the DAO,
-		// level address null/zero) — the address guard below is what excludes those.
-		const tiers: [string | undefined, string, 1 | 2 | 3][] = [
-			[c.level1?.address, c.amount1, 1],
-			[c.level2?.address, c.amount2, 2],
-			[c.level3?.address, c.amount3, 3],
+		// amount1/2/3 are stored even when that level was NOT paid: an unqualified sponsor (holds no
+		// vault) is recorded with its real address while the money went to the DAO. A present address
+		// is therefore NOT proof of payment — reconcile against daoAmount to find the paid legs.
+		const amounts: [bigint, bigint, bigint] = [BigInt(c.amount1), BigInt(c.amount2), BigInt(c.amount3)];
+		const paid = paidLegs(amounts, BigInt(c.devAmount), BigInt(c.daoAmount), split) ?? [true, true, true];
+		const tiers: [string | undefined, 1 | 2 | 3][] = [
+			[c.level1?.address, 1],
+			[c.level2?.address, 2],
+			[c.level3?.address, 3],
 		];
-		for (const [addr, amt, level] of tiers) {
-			if (addr && addr.toLowerCase() !== ZERO_ADDR && Number(amt) > 0) {
+		for (const [addr, level] of tiers) {
+			const amt = amounts[level - 1];
+			if (paid[level - 1] && addr && addr.toLowerCase() !== ZERO_ADDR && amt > 0n) {
 				legs.push({ affiliate: addr.toLowerCase(), level, usd: Number(amt) / 10 ** dec, buyer: c.buyer.address.toLowerCase(), block });
 			}
 		}

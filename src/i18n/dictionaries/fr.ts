@@ -239,6 +239,8 @@ const fr: Dictionary = {
 			buy: 'Acheter le coffre {name}',
 			buying: 'Achat…',
 			cancel: 'Annuler',
+			walletSyncing: 'Connexion du portefeuille…',
+			walletNotReady: 'Votre portefeuille n\'est pas encore prêt à signer — rien n\'a été envoyé et vous n\'avez pas été débité. Patientez un instant puis réessayez.',
 			txReverted: 'La transaction a été rejetée sur la chaîne — vous n\'avez pas été débité. Veuillez réessayer dans un instant.',
 		},
 		position: {
