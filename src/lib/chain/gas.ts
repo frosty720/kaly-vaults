@@ -26,25 +26,38 @@ export function withHeadroom(estimate: bigint): bigint {
 	return (estimate * HEADROOM_NUM) / HEADROOM_DEN;
 }
 
+export interface GasBounds {
+	/**
+	 * Hard floor. The resolved limit is NEVER below this, no matter what the node
+	 * estimates. This is what makes trusting `eth_estimateGas` safe: a too-low
+	 * estimate would burn the user's gas on an out-of-gas revert, which is worse
+	 * than being blocked. Set it from MEASURED on-chain `gasUsed`, with margin.
+	 */
+	floor: bigint;
+	/** Used when estimation is unavailable or fails. Generous by design. */
+	fallback: bigint;
+}
+
 /**
- * Resolve the gas limit for a write.
- *
- * @param estimate  Thunk performing the live estimate; may reject.
- * @param fallback  Pinned ceiling used when estimation is unavailable or fails.
+ * Resolve the gas limit for a write: `max(floor, estimate + headroom)`, or the
+ * fallback if the node won't give a usable estimate.
  *
  * A successful estimate wins even if it is LARGER than the fallback — the
- * fallback is a stand-in for an unknown cost, not an upper bound on a known one.
+ * fallback stands in for an unknown cost, it is not an upper bound on a known
+ * one. The floor guards the other direction.
  */
 export async function resolveGas(
 	estimate: () => Promise<bigint>,
-	fallback: bigint,
+	{ floor, fallback }: GasBounds,
 ): Promise<bigint> {
+	let padded: bigint;
 	try {
 		const est = await estimate();
 		// A zero/absurd estimate means the node answered but not usefully.
 		if (est <= 0n) return fallback;
-		return withHeadroom(est);
+		padded = withHeadroom(est);
 	} catch {
 		return fallback;
 	}
+	return padded > floor ? padded : floor;
 }

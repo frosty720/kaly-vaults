@@ -22,13 +22,26 @@ const FEES = {
 } as const;
 
 // Fallback gas limits, used ONLY when live estimation fails (Besu estimation is
-// unreliable for some txs). These are deliberately generous, which is safe as a
-// last resort but NOT safe as a default: `gas * maxFeePerGas` is the balance a
-// wallet demands before it will sign, so a fat constant prices out buyers who
-// can easily afford the real cost. See gas.ts for the incident this comes from.
+// unreliable for some txs). Deliberately generous, which is safe as a last resort
+// but NOT safe as a default: `gas * maxFeePerGas` is the balance a wallet demands
+// before it will sign, so a fat constant prices out buyers who can easily afford
+// the real cost. See gas.ts for the incident this comes from.
 const GAS_APPROVE = 100_000n;
 const GAS_PURCHASE = 3_000_000n; // swap + full-range LP mint is heavy
 const GAS_CLAIM = 800_000n; // claimMany over a few vaults needs more headroom than single claim
+
+// Floors — the resolved limit never drops below these even if the node estimates
+// low, so a bad estimate can never cause an out-of-gas revert (which would burn
+// the user's gas rather than merely blocking them).
+//
+// PURCHASE floor is measured, not guessed: across all 70 purchases settled on
+// mainnet as of 2026-07-28, gasUsed ranged 702,021 – 846,275 (median 764,646,
+// p90 820,534). 1,200,000 sits 42% above the all-time maximum. Re-measure before
+// lowering it, and raise it if the purchase path ever gains work.
+const GAS_FLOOR_PURCHASE = 1_200_000n;
+// CLAIM keeps its original pinned value as the floor — behaviour is unchanged
+// unless estimation asks for MORE (claimMany scales with the number of vaults).
+const GAS_FLOOR_CLAIM = GAS_CLAIM;
 
 export function useApprove() {
 	const { writeContractAsync, ...rest } = useWriteContract();
@@ -50,13 +63,13 @@ export function usePurchase() {
 			const gas = await resolveGas(async () => {
 				if (!client || !address) throw new Error('estimation unavailable');
 				return client.estimateContractGas({ address: A.vaultManager!, abi: vaultManagerAbi, functionName: 'purchase', args: [tier, stable, deadline, referrer], account: address });
-			}, GAS_PURCHASE);
+			}, { floor: GAS_FLOOR_PURCHASE, fallback: GAS_PURCHASE });
 			return writeContractAsync({ address: A.vaultManager!, abi: vaultManagerAbi, functionName: 'purchase', args: [tier, stable, deadline, referrer], gas, ...FEES });
 		}
 		const gas = await resolveGas(async () => {
 			if (!client || !address) throw new Error('estimation unavailable');
 			return client.estimateContractGas({ address: A.vaultManager!, abi: vaultManagerAbi, functionName: 'purchase', args: [tier, stable, deadline], account: address });
-		}, GAS_PURCHASE);
+		}, { floor: GAS_FLOOR_PURCHASE, fallback: GAS_PURCHASE });
 		return writeContractAsync({ address: A.vaultManager!, abi: vaultManagerAbi, functionName: 'purchase', args: [tier, stable, deadline], gas, ...FEES });
 	};
 	return { buy, ...rest };
@@ -76,7 +89,7 @@ export function useClaim() {
 		const gas = await resolveGas(async () => {
 			if (!client || !address) throw new Error('estimation unavailable');
 			return client.estimateContractGas({ address: A.rewardsPool!, abi: rewardsPoolAbi, functionName: 'claimMany', args: [ids], account: address });
-		}, GAS_CLAIM);
+		}, { floor: GAS_FLOOR_CLAIM, fallback: GAS_CLAIM });
 		const hash = await writeContractAsync({ address: A.rewardsPool!, abi: rewardsPoolAbi, functionName: 'claimMany', args: [ids], gas, ...FEES });
 		if (client) {
 			setIsConfirming(true);

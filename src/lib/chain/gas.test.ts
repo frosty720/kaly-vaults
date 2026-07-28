@@ -6,11 +6,18 @@ import { withHeadroom, resolveGas } from './gas';
 const MAX_FEE_PER_GAS = 30_000_000_000n; // 30 gwei
 const OLD_PINNED_PURCHASE_GAS = 3_000_000n;
 
+// Mirrors writes.ts. Floor is measured from real mainnet gasUsed (see below).
+const BOUNDS = { floor: 1_200_000n, fallback: OLD_PINNED_PURCHASE_GAS };
+
 // Measured on KalyChain mainnet 2026-07-28 via `cast estimate` for
 // purchase(tier=1, USDT). Confirmed against a real settled purchase the same day:
 // tx 0x4e9f9ad684c578eae589f540444ee39994a92accf991c85b21d65ff8de91aea9 used
 // 789,441 gas against the 3,000,000 limit — 26% of what was reserved.
 const REAL_PURCHASE_ESTIMATE = 844_006n;
+
+// Observed gasUsed across ALL 70 purchases settled on mainnet as of 2026-07-28.
+const OBSERVED_GAS_MIN = 702_021n;
+const OBSERVED_GAS_MAX = 846_275n;
 
 // Balance of the buyer whose purchase could not be signed (0.0498 KLC). The same
 // wallet completed the identical purchase, with this code unchanged, once it was
@@ -29,26 +36,50 @@ describe('withHeadroom', () => {
 });
 
 describe('resolveGas', () => {
-	it('uses the padded live estimate when estimation succeeds', async () => {
-		const gas = await resolveGas(async () => 844_006n, OLD_PINNED_PURCHASE_GAS);
-		expect(gas).toBe(1_266_009n);
+	it('uses the padded live estimate when it exceeds the floor', async () => {
+		const gas = await resolveGas(async () => 1_000_000n, BOUNDS);
+		expect(gas).toBe(1_500_000n);
 	});
 
 	it('falls back to the pinned ceiling when estimation rejects', async () => {
 		const gas = await resolveGas(async () => {
 			throw new Error('execution reverted');
-		}, OLD_PINNED_PURCHASE_GAS);
+		}, BOUNDS);
 		expect(gas).toBe(OLD_PINNED_PURCHASE_GAS);
 	});
 
 	it('falls back when the node returns a useless zero estimate', async () => {
-		const gas = await resolveGas(async () => 0n, OLD_PINNED_PURCHASE_GAS);
+		const gas = await resolveGas(async () => 0n, BOUNDS);
 		expect(gas).toBe(OLD_PINNED_PURCHASE_GAS);
 	});
 
 	it('honours an estimate larger than the fallback (fallback is not a cap)', async () => {
-		const gas = await resolveGas(async () => 4_000_000n, OLD_PINNED_PURCHASE_GAS);
+		const gas = await resolveGas(async () => 4_000_000n, BOUNDS);
 		expect(gas).toBe(6_000_000n);
+	});
+});
+
+describe('floor protects against a bad estimate', () => {
+	it('never returns less than the floor, however low the node estimates', async () => {
+		for (const bogus of [1n, 21_000n, 300_000n, 700_000n]) {
+			expect(await resolveGas(async () => bogus, BOUNDS)).toBe(BOUNDS.floor);
+		}
+	});
+
+	it('the floor clears the worst purchase ever settled on mainnet', () => {
+		expect(BOUNDS.floor).toBeGreaterThan(OBSERVED_GAS_MAX);
+	});
+
+	it('even a floor-pinned limit clears the observed max with real margin', async () => {
+		const gas = await resolveGas(async () => OBSERVED_GAS_MIN, BOUNDS);
+		// >= 40% headroom over the heaviest purchase on record.
+		expect(gas * 10n).toBeGreaterThanOrEqual(OBSERVED_GAS_MAX * 14n);
+	});
+
+	it('a realistic estimate resolves at or above the floor, never below', async () => {
+		const gas = await resolveGas(async () => REAL_PURCHASE_ESTIMATE, BOUNDS);
+		expect(gas).toBeGreaterThanOrEqual(BOUNDS.floor);
+		expect(gas).toBeGreaterThan(OBSERVED_GAS_MAX);
 	});
 });
 
@@ -63,13 +94,13 @@ describe('spend ceiling regression (2026-07-28 stranded purchase)', () => {
 		expect(realCost).toBeLessThan(STRANDED_BUYER_BALANCE);
 	});
 
-	it('an estimate-derived limit lets that same buyer sign', async () => {
-		const gas = await resolveGas(async () => REAL_PURCHASE_ESTIMATE, OLD_PINNED_PURCHASE_GAS);
+	it('the new limit lets that same buyer sign', async () => {
+		const gas = await resolveGas(async () => REAL_PURCHASE_ESTIMATE, BOUNDS);
 		expect(gas * MAX_FEE_PER_GAS).toBeLessThan(STRANDED_BUYER_BALANCE);
 	});
 
-	it('still leaves real headroom above the measured estimate', async () => {
-		const gas = await resolveGas(async () => REAL_PURCHASE_ESTIMATE, OLD_PINNED_PURCHASE_GAS);
-		expect(gas).toBeGreaterThan(REAL_PURCHASE_ESTIMATE);
+	it('even the worst case — floor with no usable estimate — lets them sign', async () => {
+		const gas = await resolveGas(async () => 1n, BOUNDS);
+		expect(gas * MAX_FEE_PER_GAS).toBeLessThan(STRANDED_BUYER_BALANCE);
 	});
 });
