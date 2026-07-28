@@ -244,6 +244,8 @@ const en = {
 			buy: 'Buy {name} Vault',
 			buying: 'Buying…',
 			cancel: 'Cancel',
+			walletSyncing: 'Connecting wallet…',
+			walletNotReady: 'Your wallet isn\'t ready to sign yet — nothing was sent and you were not charged. Wait a moment and try again.',
 			txReverted: 'The transaction was rejected on-chain — you were not charged. Please try again in a moment.',
 		},
 		position: {

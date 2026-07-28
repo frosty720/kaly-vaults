@@ -19,6 +19,7 @@ async function getLogsChunked(
 }
 
 const lc = (a: string) => a.toLowerCase();
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 export interface SponsorEdge { buyer: string; sponsor: string }
 /** A commission leg attributed to an affiliate from one purchase. */
@@ -27,9 +28,66 @@ export interface FeeLeg { affiliate: string; level: 1 | 2 | 3; usd: number; buye
 const BLOCKS_PER_DAY = 43200n; // KalyChain 2s blocks
 const BLOCKS_PER_MONTH = BLOCKS_PER_DAY * 30n;
 
+export interface FeeSplit { n1Bps: number; n2Bps: number; n3Bps: number; devBps: number; daoBps: number }
+
+/** VaultManager.initializeV3 defaults — 6% / 2.5% / 1.5% / dev 2% / DAO 8% (POL 80%). */
+export const DEFAULT_FEE_SPLIT: FeeSplit = { n1Bps: 600, n2Bps: 250, n3Bps: 150, devBps: 200, daoBps: 800 };
+
+/**
+ * Which of the three affiliate legs a `FeesRouted` event ACTUALLY paid out.
+ *
+ * The event emits n1/n2/n3 and their amounts unconditionally. A level that failed the
+ * skin-in-the-game gate (`VaultManager._payLeg` — the recipient must hold >= 1 vault) still
+ * appears with its real, non-zero address and its full amount, while the money was transferred
+ * to the DAO treasury instead. Only `daoAmt` reflects what really happened:
+ *
+ *     daoAmt = daoBase + Σ(unpaid legs),  where  daoBase = amount * daoBps / BPS
+ *
+ * `daoBase` is reconstructed from `devAmt` (both scale the same purchase amount by their bps).
+ * The three legs derive from distinct bps, so the subset summing to the excess is unique — that
+ * identifies exactly which legs were rolled up to the DAO.
+ *
+ * Returns `null` when the excess matches no subset or more than one (e.g. `setFeeSplit` changed
+ * the ratios after this event was emitted), so callers can fall back rather than silently
+ * mis-stating someone's earnings.
+ */
+export function paidLegs(
+	amounts: readonly [bigint, bigint, bigint],
+	devAmt: bigint,
+	daoAmt: bigint,
+	split: FeeSplit = DEFAULT_FEE_SPLIT,
+): [boolean, boolean, boolean] | null {
+	if (split.devBps === 0) return null; // daoBase not derivable from devAmt
+	const daoBase = (devAmt * BigInt(split.daoBps)) / BigInt(split.devBps);
+	const excess = daoAmt - daoBase;
+	if (excess < 0n) return null;
+
+	const positive = amounts.filter((a) => a > 0n);
+	if (positive.length === 0) return [true, true, true]; // nothing was payable either way
+
+	// Distinct subset sums are separated by at least the smallest leg, so anything within half of
+	// it is an unambiguous match — this absorbs the few-unit drift from reconstructing daoBase
+	// through two floor divisions.
+	const tol = positive.reduce((m, a) => (a < m ? a : m)) / 2n;
+
+	let match: number | null = null;
+	for (let mask = 0; mask < 8; mask++) {
+		let sum = 0n;
+		for (let i = 0; i < 3; i++) if ((mask >> i) & 1) sum += amounts[i];
+		const diff = sum > excess ? sum - excess : excess - sum;
+		if (diff <= tol) {
+			if (match !== null) return null; // degenerate amounts — refuse to guess
+			match = mask;
+		}
+	}
+	if (match === null) return null;
+	// a set bit means that leg rolled to the DAO, i.e. was NOT paid
+	return [(match & 1) === 0, ((match >> 1) & 1) === 0, ((match >> 2) & 1) === 0];
+}
+
 /** Raw SponsorSet + FeesRouted events for the VaultManager, decoded into a usable shape. */
 export async function getAffiliateEvents(
-	client: PublicClient, vaultManager: `0x${string}`, fromBlock: bigint,
+	client: PublicClient, vaultManager: `0x${string}`, fromBlock: bigint, split: FeeSplit = DEFAULT_FEE_SPLIT,
 ): Promise<{ edges: SponsorEdge[]; legs: FeeLeg[]; head: bigint }> {
 	const ssEvent = vaultManagerAbi.find((x: any) => x.type === 'event' && x.name === 'SponsorSet');
 	const frEvent = vaultManagerAbi.find((x: any) => x.type === 'event' && x.name === 'FeesRouted');
@@ -49,14 +107,15 @@ export async function getAffiliateEvents(
 		const usd = (amt: bigint) => Number(amt) / 10 ** d;
 		const buyer = lc(l.args.buyer);
 		const blk = l.blockNumber as bigint;
-		// A level only earns if its address is set (non-zero) AND the amount is non-zero.
-		// (Unqualified/empty legs are emitted with a zero address or roll into daoAmt.)
-		if (l.args.n1 !== '0x0000000000000000000000000000000000000000' && l.args.n1Amt > 0n)
-			legs.push({ affiliate: lc(l.args.n1), level: 1, usd: usd(l.args.n1Amt), buyer, block: blk });
-		if (l.args.n2 !== '0x0000000000000000000000000000000000000000' && l.args.n2Amt > 0n)
-			legs.push({ affiliate: lc(l.args.n2), level: 2, usd: usd(l.args.n2Amt), buyer, block: blk });
-		if (l.args.n3 !== '0x0000000000000000000000000000000000000000' && l.args.n3Amt > 0n)
-			legs.push({ affiliate: lc(l.args.n3), level: 3, usd: usd(l.args.n3Amt), buyer, block: blk });
+		const amounts: [bigint, bigint, bigint] = [l.args.n1Amt, l.args.n2Amt, l.args.n3Amt];
+		// A non-zero level address does NOT mean that level was paid — an unqualified sponsor is
+		// still named in the event while its money went to the DAO. Reconcile against daoAmt.
+		const paid = paidLegs(amounts, l.args.devAmt, l.args.daoAmt, split) ?? [true, true, true];
+		const addrs = [l.args.n1, l.args.n2, l.args.n3];
+		for (let i = 0; i < 3; i++) {
+			if (!paid[i] || addrs[i] === ZERO_ADDRESS || amounts[i] === 0n) continue;
+			legs.push({ affiliate: lc(addrs[i]), level: (i + 1) as 1 | 2 | 3, usd: usd(amounts[i]), buyer, block: blk });
+		}
 	}
 	return { edges, legs, head };
 }

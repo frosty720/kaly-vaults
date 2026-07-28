@@ -8,6 +8,7 @@ import { rewardsPoolAbi, vaultManagerAbi, positionManagerAbi, v3PoolAbi } from '
 import { getOwnedVaultTokenIds, getPurchases, getTreasuryPositionIds } from './events';
 import { klcUsdFromSlot0, positionTokenAmounts, positionUsdValue } from './pol';
 import { getAffiliateEvents, affiliateStats, leaderboard } from './affiliate';
+import type { FeeSplit } from './affiliate';
 import { fetchProtocolTotals, fetchPolHistory, fetchAffiliateGraph, fetchPoolTvl, fetchKlcPriceV3, hasSubgraph } from './subgraph';
 import { getKlcPrice, isValidKlcPrice } from '@/lib/price';
 
@@ -20,12 +21,36 @@ const A = getAddresses(ACTIVE_NETWORK);
  */
 function useAffiliateEvents() {
 	const client = usePublicClient();
+	const split = useFeeSplit();
 	return useQuery({
-		queryKey: ['affiliateEvents', ACTIVE_NETWORK],
+		queryKey: ['affiliateEvents', ACTIVE_NETWORK, split.data],
 		enabled: hasSubgraph || (!!client && !!A.vaultManager),
 		refetchInterval: 30000,
 		queryFn: () =>
-			hasSubgraph ? fetchAffiliateGraph() : getAffiliateEvents(client!, A.vaultManager!, A.deployBlock),
+			hasSubgraph
+				? fetchAffiliateGraph(split.data)
+				: getAffiliateEvents(client!, A.vaultManager!, A.deployBlock, split.data),
+	});
+}
+
+/**
+ * The live fee split. Needed to tell a PAID affiliate leg from one that was named in FeesRouted
+ * but rolled to the DAO (see paidLegs). Falls back to the contract defaults if the read fails.
+ */
+function useFeeSplit() {
+	const client = usePublicClient();
+	return useQuery({
+		queryKey: ['feeSplit', ACTIVE_NETWORK],
+		enabled: !!client && !!A.vaultManager,
+		staleTime: 3600_000, // changes only via a governed setFeeSplit
+		queryFn: async (): Promise<FeeSplit> => {
+			const read = (fn: 'n1Bps' | 'n2Bps' | 'n3Bps' | 'devBps' | 'daoBps') =>
+				client!.readContract({ address: A.vaultManager!, abi: vaultManagerAbi, functionName: fn });
+			const [n1Bps, n2Bps, n3Bps, devBps, daoBps] = await Promise.all([
+				read('n1Bps'), read('n2Bps'), read('n3Bps'), read('devBps'), read('daoBps'),
+			]);
+			return { n1Bps, n2Bps, n3Bps, devBps, daoBps };
+		},
 	});
 }
 

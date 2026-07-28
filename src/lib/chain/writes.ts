@@ -1,10 +1,11 @@
 'use client';
 import { useState } from 'react';
-import { useWriteContract, usePublicClient } from 'wagmi';
+import { useWriteContract, usePublicClient, useAccount } from 'wagmi';
 import { getAddresses } from './addresses';
 import { ACTIVE_NETWORK } from './chains';
 import { erc20Abi, vaultManagerAbi, rewardsPoolAbi } from './abis';
 import { waitForSuccess } from './receipt';
+import { resolveGas } from './gas';
 
 const A = getAddresses(ACTIVE_NETWORK);
 
@@ -20,7 +21,11 @@ const FEES = {
 	maxPriorityFeePerGas: 3_000_000_000n, // 3 gwei (matches KalySwap)
 } as const;
 
-// Explicit gas limits (KalySwap pins these too — Besu estimation is unreliable for some txs).
+// Fallback gas limits, used ONLY when live estimation fails (Besu estimation is
+// unreliable for some txs). These are deliberately generous, which is safe as a
+// last resort but NOT safe as a default: `gas * maxFeePerGas` is the balance a
+// wallet demands before it will sign, so a fat constant prices out buyers who
+// can easily afford the real cost. See gas.ts for the incident this comes from.
 const GAS_APPROVE = 100_000n;
 const GAS_PURCHASE = 3_000_000n; // swap + full-range LP mint is heavy
 const GAS_CLAIM = 800_000n; // claimMany over a few vaults needs more headroom than single claim
@@ -34,19 +39,33 @@ export function useApprove() {
 
 export function usePurchase() {
 	const { writeContractAsync, ...rest } = useWriteContract();
+	const client = usePublicClient();
+	const { address } = useAccount();
 	// vaultManagerAbi has two `purchase` overloads. viem resolves overloads by matching the
 	// args tuple to the correct overload signature — 3-element args → 3-arg overload,
-	// 4-element args → 4-arg overload. No explicit signature string needed.
-	const buy = async (tier: number, stable: `0x${string}`, deadline: bigint, referrer?: `0x${string}`) =>
-		referrer
-			? writeContractAsync({ address: A.vaultManager!, abi: vaultManagerAbi, functionName: 'purchase', args: [tier, stable, deadline, referrer], gas: GAS_PURCHASE, ...FEES })
-			: writeContractAsync({ address: A.vaultManager!, abi: vaultManagerAbi, functionName: 'purchase', args: [tier, stable, deadline], gas: GAS_PURCHASE, ...FEES });
+	// 4-element args → 4-arg overload. No explicit signature string needed. Each branch
+	// estimates inline so the args tuple keeps its literal type for that resolution.
+	const buy = async (tier: number, stable: `0x${string}`, deadline: bigint, referrer?: `0x${string}`) => {
+		if (referrer) {
+			const gas = await resolveGas(async () => {
+				if (!client || !address) throw new Error('estimation unavailable');
+				return client.estimateContractGas({ address: A.vaultManager!, abi: vaultManagerAbi, functionName: 'purchase', args: [tier, stable, deadline, referrer], account: address });
+			}, GAS_PURCHASE);
+			return writeContractAsync({ address: A.vaultManager!, abi: vaultManagerAbi, functionName: 'purchase', args: [tier, stable, deadline, referrer], gas, ...FEES });
+		}
+		const gas = await resolveGas(async () => {
+			if (!client || !address) throw new Error('estimation unavailable');
+			return client.estimateContractGas({ address: A.vaultManager!, abi: vaultManagerAbi, functionName: 'purchase', args: [tier, stable, deadline], account: address });
+		}, GAS_PURCHASE);
+		return writeContractAsync({ address: A.vaultManager!, abi: vaultManagerAbi, functionName: 'purchase', args: [tier, stable, deadline], gas, ...FEES });
+	};
 	return { buy, ...rest };
 }
 
 export function useClaim() {
 	const { writeContractAsync, isPending: isWriting } = useWriteContract();
 	const client = usePublicClient();
+	const { address } = useAccount();
 	const [isConfirming, setIsConfirming] = useState(false);
 	// v2 RewardsPool: per-vault claimMany(uint256[] tokenIds).
 	// Wait for the receipt (and require status success — a mined-but-reverted claim
@@ -54,7 +73,11 @@ export function useClaim() {
 	// POST-claim state (otherwise the UI briefly shows the stale pre-claim
 	// "claimable" until the next poll).
 	const claim = async (ids: bigint[]) => {
-		const hash = await writeContractAsync({ address: A.rewardsPool!, abi: rewardsPoolAbi, functionName: 'claimMany', args: [ids], gas: GAS_CLAIM, ...FEES });
+		const gas = await resolveGas(async () => {
+			if (!client || !address) throw new Error('estimation unavailable');
+			return client.estimateContractGas({ address: A.rewardsPool!, abi: rewardsPoolAbi, functionName: 'claimMany', args: [ids], account: address });
+		}, GAS_CLAIM);
+		const hash = await writeContractAsync({ address: A.rewardsPool!, abi: rewardsPoolAbi, functionName: 'claimMany', args: [ids], gas, ...FEES });
 		if (client) {
 			setIsConfirming(true);
 			try {
