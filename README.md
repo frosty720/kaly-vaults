@@ -138,12 +138,13 @@ RPC `https://rpc.kalychain.io/rpc` · Explorer `https://kalyscan.io`
 | Treasury / DAO treasury (holds POL LP NFTs) | `0x92564ec0d22BBd5e3FF978B977CA968e6c7d1c44` |
 | Dev recipient (fee bucket) | `0x12BA3F424d630A583BdBCa56b0c1A0a7C1d7D66e` |
 
-Accepted stables (`VaultManager.stables`, both enabled, 0.3% fee tier):
+Accepted stables (`VaultManager.stables`, all enabled, 0.3% fee tier):
 
 | Stable | Token | Decimals | KLC pool |
 |---|---|---|---|
 | USDT — **price anchor** | `0x2CA775C77B922A51FcF3097F52bFFdbc0250D99A` | 6 | `0x3848C7C8D088549194A264Cb1d639258AbE406a9` |
 | KUSD | `0xCd02480926317748e95c5bBBbb7D1070b2327f1A` | 18 | `0xF8C867C0F07EBa68b2ACF07B9ffd45B1AA1dDcFE` |
+| USDC (bridged, enabled 2026-08-17) | `0x9cAb0c396cF0F4325913f2269a0b72BD4d46E3A9` | 6 | `0x65Dd443DFc57F9731AE0fD157B8999976F5fe8aE` |
 
 Deploy block: `51187545` (start block for event scans and the subgraph).
 
@@ -163,12 +164,13 @@ RPC `https://testnetrpc.kalychain.io/rpc` · Explorer `https://testnet.kalyscan.
 | Treasury / DAO treasury | `0x5aE2cf3fC0B99003C64bBDC7836D08064ED43Aab` |
 | Dev recipient (fee bucket) | `0x5f255373428C995cE62205C87f605aBD4362BFc4` |
 
-Accepted stables (both enabled, 0.3% fee tier):
+Accepted stables (all enabled, 0.3% fee tier):
 
 | Stable | Token | Decimals | KLC pool |
 |---|---|---|---|
 | USDT — **price anchor** | `0x6Fdb0fEd277b878a0d80494b06EA054C99d2fdD2` | 6 | `0x4594540BD03928683042E479D4DDF8Ad8705Be5C` |
 | KUSD | `0xd15F19c457AaaCB7A389B305Dac8611Cd2294c36` | 18 | `0x090077817153dF024D115942E656c965674E190c` |
+| USDC (test token) | `0x148d19609F3Ad595F8455225510f89cF0F121013` | 6 | `0x86Cc2Bf4A68dfA9A7725170808205ae26c586142` |
 
 Deploy block: `48374000` (v4 stack: 80/20 split + 3-level MLM + 8 packs + PolLib).
 
