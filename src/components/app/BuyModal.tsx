@@ -17,8 +17,11 @@ import type { Dictionary } from '@/i18n/dictionaries/en';
 
 const A = getAddresses(ACTIVE_NETWORK);
 
-const STABLE_KEYS = ['USDT', 'KUSD'] as const;
-type StableKey = (typeof STABLE_KEYS)[number];
+// Payment options come from the per-network address book, so a stable enabled on one
+// network (e.g. USDC on testnet) never shows on a network whose config lacks it.
+const STABLE_KEYS = Object.keys(A.stables);
+type StableKey = string;
+const DEFAULT_STABLE: StableKey = STABLE_KEYS.includes('USDT') ? 'USDT' : STABLE_KEYS[0];
 
 interface BuyModalProps {
 	tierIndex: number;
@@ -30,7 +33,7 @@ interface BuyModalProps {
 
 export function BuyModal({ tierIndex, addr, onClose, onPurchased, t }: BuyModalProps) {
 	const tier = TIERS[tierIndex];
-	const [selectedStable, setSelectedStable] = useState<StableKey>('USDT');
+	const [selectedStable, setSelectedStable] = useState<StableKey>(DEFAULT_STABLE);
 	// Prefill from a referral link (?ref=0x…) so a shared link auto-sets the sponsor.
 	const [referralInput, setReferralInput] = useState(() => {
 		if (typeof window === 'undefined') return '';
