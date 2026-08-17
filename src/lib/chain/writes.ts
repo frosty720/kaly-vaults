@@ -16,9 +16,12 @@ const A = getAddresses(ACTIVE_NETWORK);
 // KalySwap frontend uses on this same chain (30 gwei / 3 gwei). 1559 (not legacy gasPrice)
 // because MetaMask honours explicit maxFeePerGas/maxPriorityFeePerGas as "site suggested"
 // on a 1559 chain but drops a legacy gasPrice hint. Cost is still trivial on KalyChain.
+// The priority fee must clear the validators' 21 gwei min-gas-price on its own: KalyChain's
+// baseFee decays to ~0 on an idle chain, so a 3 gwei tip gave a ~3 gwei effective price and
+// txs sat unmined for ~40 min until the purchase deadline expired (2026-08-17, tx 0xdfb3edbc…).
 const FEES = {
-	maxFeePerGas: 30_000_000_000n, // 30 gwei (matches KalySwap)
-	maxPriorityFeePerGas: 3_000_000_000n, // 3 gwei (matches KalySwap)
+	maxFeePerGas: 30_000_000_000n, // 30 gwei
+	maxPriorityFeePerGas: 21_000_000_000n, // 21 gwei — the network's min-gas-price floor
 } as const;
 
 // Fallback gas limits, used ONLY when live estimation fails (Besu estimation is
