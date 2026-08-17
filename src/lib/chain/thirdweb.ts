@@ -78,6 +78,7 @@ export const SUPPORTED_TOKENS: Record<number, { address: string; name: string; s
 	[kalyTestnet.id]: [
 		{ address: '0xd15F19c457AaaCB7A389B305Dac8611Cd2294c36', name: 'KUSD Stablecoin', symbol: 'KUSD', icon: TOK_BASE + 'kusd.png' },
 		{ address: '0x6Fdb0fEd277b878a0d80494b06EA054C99d2fdD2', name: 'Tether USD', symbol: 'USDT', icon: TOK_BASE + 'usdt.png' },
+		{ address: '0x148d19609F3Ad595F8455225510f89cF0F121013', name: 'USD Coin', symbol: 'USDC', icon: TOK_BASE + 'usdc.png' },
 	],
 };
 

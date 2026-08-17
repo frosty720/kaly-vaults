@@ -22,6 +22,7 @@ const TESTNET: Addresses = {
 	stables: {
 		KUSD: { address: '0xd15F19c457AaaCB7A389B305Dac8611Cd2294c36', decimals: 18, pool: '0x090077817153dF024D115942E656c965674E190c' },
 		USDT: { address: '0x6Fdb0fEd277b878a0d80494b06EA054C99d2fdD2', decimals: 6,  pool: '0x4594540BD03928683042E479D4DDF8Ad8705Be5C' },
+		USDC: { address: '0x148d19609F3Ad595F8455225510f89cF0F121013', decimals: 6,  pool: '0x86Cc2Bf4A68dfA9A7725170808205ae26c586142' },
 	},
 	// v4 stack (80/20 + 3-level MLM + 8 packs + PolLib) deployed ~block 48374000.
 	deployBlock: BigInt(48374000),
@@ -36,6 +37,8 @@ const MAINNET: Addresses = {
 	stables: {
 		KUSD: { address: '0xCd02480926317748e95c5bBBbb7D1070b2327f1A', decimals: 18, pool: '0xf8c867c0f07eba68b2acf07b9ffd45b1aa1ddcfe' },
 		USDT: { address: '0x2CA775C77B922A51FcF3097F52bFFdbc0250D99A', decimals: 6,  pool: '0x3848c7c8d088549194a264cb1d639258abe406a9' },
+		// Bridged Hyperlane synthetic USDC; enabled on the VaultManager 2026-08-17.
+		USDC: { address: '0x9cAb0c396cF0F4325913f2269a0b72BD4d46E3A9', decimals: 6,  pool: '0x65dd443dfc57f9731ae0fd157b8999976f5fe8ae' },
 	},
 	// v4 stack deployed at mainnet block 51187545 (confirmed via eth_getCode binary search).
 	deployBlock: BigInt(51187545),
