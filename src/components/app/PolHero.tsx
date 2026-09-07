@@ -7,10 +7,11 @@ import { LiveBadge } from './LiveBadge';
 import { AnimatedNumber } from './AnimatedNumber';
 import { AreaChart } from './AreaChart';
 import type { Dictionary } from '@/i18n/dictionaries/en';
+import { NATIVE_SYMBOL } from '@/lib/chain/chains';
 
 export function PolHero({ t }: { t: Dictionary['app']['pol'] }) {
 	const { data, isLoading, isError } = usePolStats();
-	const { data: klcPrice } = useKlcPrice();
+	const { data: kmtPrice } = useKlcPrice();
 	// Cumulative POL-added trend from the subgraph (fast; doesn't block the live headline above).
 	const { data: history } = usePolHistory();
 	// Whole-pool TVL (everyone's liquidity) — shown alongside, NOT as protocol-owned.
@@ -64,7 +65,7 @@ export function PolHero({ t }: { t: Dictionary['app']['pol'] }) {
 							key={symbol}
 							className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/[0.06] px-3 py-1.5 text-xs"
 						>
-							<span className="text-white/55">KLC/{symbol}</span>
+							<span className="text-white/55">{NATIVE_SYMBOL}/{symbol}</span>
 							<span className="tabular-nums font-semibold text-amber-200/90">{fmtUsd(usd)}</span>
 						</span>
 					))}
@@ -82,11 +83,11 @@ export function PolHero({ t }: { t: Dictionary['app']['pol'] }) {
 			{/* Footnote — transparency labels */}
 			<p className="relative text-[11px] text-white/40 leading-relaxed">
 				{t.footnote}
-				{klcPrice !== undefined ? (
+				{kmtPrice !== undefined ? (
 					<>
-						{' '}· KLC{' '}
+						{' '}· {NATIVE_SYMBOL}{' '}
 						<span className="text-amber-300/70">
-							${klcPrice.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
+							${kmtPrice.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
 						</span>{' '}
 						({t.klcLiveSuffix})
 					</>

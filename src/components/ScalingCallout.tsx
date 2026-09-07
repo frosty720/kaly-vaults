@@ -1,5 +1,5 @@
 import { Zap } from 'lucide-react';
-import { BASE_KLC_PRICE, project, tierByKey } from '@/lib/tiers';
+import { BASE_KMT_PRICE, project, tierByKey } from '@/lib/tiers';
 import { formatUSD, interpolate } from '@/lib/utils';
 import type { Dictionary } from '@/i18n/dictionaries/en';
 import type { Locale } from '@/i18n/config';
@@ -7,11 +7,11 @@ import type { Locale } from '@/i18n/config';
 interface ScalingCalloutProps {
 	dict: Dictionary;
 	locale: Locale;
-	/** Live KLC/USD base price; falls back to the hardcoded constant. */
-	klcPrice?: number;
+	/** Live KMT/USD base price; falls back to the labelled BASE_KMT_PRICE. */
+	kmtPrice?: number;
 }
 
-export function ScalingCallout({ dict, locale, klcPrice = BASE_KLC_PRICE }: ScalingCalloutProps) {
+export function ScalingCallout({ dict, locale, kmtPrice = BASE_KMT_PRICE }: ScalingCalloutProps) {
 	const genesis = tierByKey('whale100k');
 	const at2x = project({ investmentUsd: genesis.price, baseApr: genesis.baseApr, priceMultiplier: 2 });
 	const at5x = project({ investmentUsd: genesis.price, baseApr: genesis.baseApr, priceMultiplier: 5 });
@@ -27,7 +27,7 @@ export function ScalingCallout({ dict, locale, klcPrice = BASE_KLC_PRICE }: Scal
 					<div className="text-sm sm:text-base text-white/80 leading-relaxed">
 						<span className="text-white font-semibold">{dict.scaling.boldLead}</span>{' '}
 						{interpolate(dict.scaling.body, {
-							todayPrice: formatUSD(klcPrice, locale, { decimals: 4 }),
+							todayPrice: formatUSD(kmtPrice, locale, { decimals: 4 }),
 						})}{' '}
 						<span className="text-amber-300 font-semibold">
 							{interpolate(dict.scaling.at2x, {

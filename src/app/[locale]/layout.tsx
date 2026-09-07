@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import { LOCALES, isLocale, LOCALE_HTML_LANG } from '@/i18n/config';
 import { getDictionary } from '@/i18n/get-dictionary';
+import { CutoverNotice } from '@/components/CutoverNotice';
 import '../globals.css';
 
 const inter = Inter({
@@ -54,13 +55,17 @@ export default async function RootLayout({
 }: LayoutProps<'/[locale]'>) {
 	const { locale } = await params;
 	if (!isLocale(locale)) notFound();
+	const dict = await getDictionary(locale);
 
 	return (
 		<html
 			lang={LOCALE_HTML_LANG[locale]}
 			className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
 		>
-			<body className="min-h-full flex flex-col">{children}</body>
+			<body className="min-h-full flex flex-col">
+				<CutoverNotice t={dict.cutover} />
+				{children}
+			</body>
 		</html>
 	);
 }

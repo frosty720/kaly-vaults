@@ -1,4 +1,4 @@
-import type { PublicClient } from 'viem';
+import { getAbiItem, type AbiEvent, type PublicClient } from 'viem';
 import { vaultManagerAbi, positionManagerAbi } from './abis';
 
 export function reconcileOwnedTokenIds(received: bigint[], sentAway: bigint[]): bigint[] {
@@ -9,15 +9,17 @@ export function reconcileOwnedTokenIds(received: bigint[], sentAway: bigint[]): 
 
 const CHUNK = 50000n; // stay under Besu getLogs range caps
 
+interface EventLog { args: Record<string, unknown>; blockNumber: bigint | null }
+
 async function getLogsChunked(
 	client: PublicClient,
-	params: { address: `0x${string}`; event: any; args?: any; fromBlock: bigint; toBlock: bigint },
-) {
-	const out: any[] = [];
+	params: { address: `0x${string}`; event: AbiEvent; args?: Record<string, `0x${string}`>; fromBlock: bigint; toBlock: bigint },
+): Promise<EventLog[]> {
+	const out: EventLog[] = [];
 	for (let from = params.fromBlock; from <= params.toBlock; from += CHUNK + 1n) {
 		const to = from + CHUNK > params.toBlock ? params.toBlock : from + CHUNK;
 		out.push(
-			...(await client.getLogs({ address: params.address, event: params.event, args: params.args, fromBlock: from, toBlock: to })),
+			...((await client.getLogs({ address: params.address, event: params.event, args: params.args, fromBlock: from, toBlock: to })) as unknown as EventLog[]),
 		);
 	}
 	return out;
@@ -27,26 +29,11 @@ async function getLogsChunked(
 export async function getOwnedVaultTokenIds(
 	client: PublicClient, vaultManager: `0x${string}`, owner: `0x${string}`, fromBlock: bigint,
 ): Promise<bigint[]> {
-	const transferEvent = vaultManagerAbi.find((x: any) => x.type === 'event' && x.name === 'Transfer');
+	const transferEvent = getAbiItem({ abi: vaultManagerAbi, name: 'Transfer' });
 	const head = await client.getBlockNumber();
 	const inbound = await getLogsChunked(client, { address: vaultManager, event: transferEvent, args: { to: owner }, fromBlock, toBlock: head });
 	const outbound = await getLogsChunked(client, { address: vaultManager, event: transferEvent, args: { from: owner }, fromBlock, toBlock: head });
-	return reconcileOwnedTokenIds(inbound.map((l) => l.args.tokenId), outbound.map((l) => l.args.tokenId));
-}
-
-// All vault purchases (drives protocol KPIs: total deposited + vaults minted).
-export async function getPurchases(
-	client: PublicClient, vaultManager: `0x${string}`, fromBlock: bigint,
-): Promise<{ tier: number; stable: `0x${string}`; paid: bigint; tokenId: bigint }[]> {
-	const ev = vaultManagerAbi.find((x: any) => x.type === 'event' && x.name === 'Purchased');
-	const head = await client.getBlockNumber();
-	const logs = await getLogsChunked(client, { address: vaultManager, event: ev, fromBlock, toBlock: head });
-	return logs.map((l) => ({
-		tier: Number(l.args.tier),
-		stable: l.args.stable,
-		paid: l.args.paid,
-		tokenId: l.args.tokenId,
-	}));
+	return reconcileOwnedTokenIds(inbound.map((l) => l.args.tokenId as bigint), outbound.map((l) => l.args.tokenId as bigint));
 }
 
 // Enumerate all LP positions the treasury currently owns via ERC721Enumerable on the NPM.

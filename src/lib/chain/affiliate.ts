@@ -1,25 +1,5 @@
-import type { PublicClient } from 'viem';
-import { vaultManagerAbi } from './abis';
-import { getAddresses } from './addresses';
-import { ACTIVE_NETWORK } from './chains';
 
-const A = getAddresses(ACTIVE_NETWORK);
-const CHUNK = 50000n;
-
-async function getLogsChunked(
-	client: PublicClient,
-	params: { address: `0x${string}`; event: any; args?: any; fromBlock: bigint; toBlock: bigint },
-) {
-	const out: any[] = [];
-	for (let from = params.fromBlock; from <= params.toBlock; from += CHUNK + 1n) {
-		const to = from + CHUNK > params.toBlock ? params.toBlock : from + CHUNK;
-		out.push(...(await client.getLogs({ address: params.address, event: params.event, args: params.args, fromBlock: from, toBlock: to })));
-	}
-	return out;
-}
-
-const lc = (a: string) => a.toLowerCase();
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+const lc = (s: string) => s.toLowerCase();
 
 export interface SponsorEdge { buyer: string; sponsor: string }
 /** A commission leg attributed to an affiliate from one purchase. */
@@ -83,41 +63,6 @@ export function paidLegs(
 	if (match === null) return null;
 	// a set bit means that leg rolled to the DAO, i.e. was NOT paid
 	return [(match & 1) === 0, ((match >> 1) & 1) === 0, ((match >> 2) & 1) === 0];
-}
-
-/** Raw SponsorSet + FeesRouted events for the VaultManager, decoded into a usable shape. */
-export async function getAffiliateEvents(
-	client: PublicClient, vaultManager: `0x${string}`, fromBlock: bigint, split: FeeSplit = DEFAULT_FEE_SPLIT,
-): Promise<{ edges: SponsorEdge[]; legs: FeeLeg[]; head: bigint }> {
-	const ssEvent = vaultManagerAbi.find((x: any) => x.type === 'event' && x.name === 'SponsorSet');
-	const frEvent = vaultManagerAbi.find((x: any) => x.type === 'event' && x.name === 'FeesRouted');
-	const head = await client.getBlockNumber();
-
-	const ssLogs = await getLogsChunked(client, { address: vaultManager, event: ssEvent, fromBlock, toBlock: head });
-	const edges: SponsorEdge[] = ssLogs.map((l) => ({ buyer: lc(l.args.buyer), sponsor: lc(l.args.sponsor) }));
-
-	// Stable -> $1 (decimals matter for the amount). Build a decimals lookup for valuation.
-	const dec: Record<string, number> = {};
-	for (const s of Object.values(A.stables)) dec[lc(s.address)] = s.decimals;
-
-	const frLogs = await getLogsChunked(client, { address: vaultManager, event: frEvent, fromBlock, toBlock: head });
-	const legs: FeeLeg[] = [];
-	for (const l of frLogs) {
-		const d = dec[lc(l.args.stable)] ?? 18;
-		const usd = (amt: bigint) => Number(amt) / 10 ** d;
-		const buyer = lc(l.args.buyer);
-		const blk = l.blockNumber as bigint;
-		const amounts: [bigint, bigint, bigint] = [l.args.n1Amt, l.args.n2Amt, l.args.n3Amt];
-		// A non-zero level address does NOT mean that level was paid — an unqualified sponsor is
-		// still named in the event while its money went to the DAO. Reconcile against daoAmt.
-		const paid = paidLegs(amounts, l.args.devAmt, l.args.daoAmt, split) ?? [true, true, true];
-		const addrs = [l.args.n1, l.args.n2, l.args.n3];
-		for (let i = 0; i < 3; i++) {
-			if (!paid[i] || addrs[i] === ZERO_ADDRESS || amounts[i] === 0n) continue;
-			legs.push({ affiliate: lc(addrs[i]), level: (i + 1) as 1 | 2 | 3, usd: usd(amounts[i]), buyer, block: blk });
-		}
-	}
-	return { edges, legs, head };
 }
 
 /** Loyalty multiplier x1.0 → x1.5: +0.1 per full month of tenure (capped). */

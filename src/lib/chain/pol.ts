@@ -1,3 +1,4 @@
+import { KALYCHAIN_CHAIN_ID } from './chains';
 import { Token } from '@uniswap/sdk-core';
 import { Pool, Position, TickMath } from '@uniswap/v3-sdk';
 import JSBI from 'jsbi';
@@ -14,7 +15,7 @@ export interface PositionInput {
 
 // Pure: current token amounts a position holds, derived from on-chain liquidity + live pool price.
 export function positionTokenAmounts(p: PositionInput): { amount0: bigint; amount1: bigint } {
-	const chainId = 3888; // token chainId is irrelevant to amount math
+	const chainId = KALYCHAIN_CHAIN_ID; // token chainId is irrelevant to amount math
 	const t0 = new Token(chainId, '0x0000000000000000000000000000000000000001', p.decimals0);
 	const t1 = new Token(chainId, '0x0000000000000000000000000000000000000002', p.decimals1);
 
@@ -50,12 +51,12 @@ export function positionTokenAmounts(p: PositionInput): { amount0: bigint; amoun
 	};
 }
 
-// Pure: derive live USD-per-KLC from a WKLC/stable V3 pool's slot0 sqrtPriceX96.
+// Pure: derive live USD-per-KMT from a WKLC/stable V3 pool's slot0 sqrtPriceX96.
 // The stable side is treated as $1 (peg). This is the true current spot on whatever
 // network the pool lives on — no external API, self-consistent with the LP it values.
 //
 // sqrtPriceX96 encodes sqrt(token1_raw / token0_raw) * 2^96. We recover the human-unit
-// price of token1 per token0, then orient it to USD-per-KLC depending on which side is
+// price of token1 per token0, then orient it to USD-per-KMT depending on which side is
 // the stable. All scaling is done in bigint (×1e18) before the single float conversion to
 // avoid precision loss on the very large sqrtPriceX96 value.
 export function klcUsdFromSlot0(args: {
@@ -73,12 +74,12 @@ export function klcUsdFromSlot0(args: {
 	const denominator = Q96 * Q96 * 10n ** BigInt(dec1);
 	const humanPrice = Number(numerator / denominator) / 1e18;
 	if (!Number.isFinite(humanPrice) || humanPrice <= 0) return 0;
-	// stable=token0 → humanPrice is KLC-per-stable → invert for USD-per-KLC.
-	// stable=token1 → humanPrice is stable-per-KLC = USD-per-KLC directly.
+	// stable=token0 → humanPrice is KMT-per-stable → invert for USD-per-KMT.
+	// stable=token1 → humanPrice is stable-per-KMT = USD-per-KMT directly.
 	return args.stableIsToken0 ? 1 / humanPrice : humanPrice;
 }
 
-// USD value: stable side at $1 (peg, labeled in UI), KLC side at live price (labeled in UI).
+// USD value: stable side at $1 (peg, labeled in UI), KMT side at live price (labeled in UI).
 export function positionUsdValue(args: {
 	amount0: bigint;
 	amount1: bigint;

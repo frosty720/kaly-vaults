@@ -1,170 +1,62 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-	isValidKlcPrice,
-	fetchKlcPrice,
-	getKlcPrice,
-	__resetKlcPriceCache,
-} from '@/lib/price';
-import { BASE_KLC_PRICE } from '@/lib/tiers';
+import { isValidTokenPrice, fetchKmtPrice, getKmtPrice, getKmtPriceDetailed, __resetKmtPriceCache } from '@/lib/price';
+import { BASE_KMT_PRICE } from '@/lib/tiers';
 
-// Build a minimal mock Response
 function mockResponse(body: unknown, ok = true): Response {
-	return {
-		ok,
-		json: async () => body,
-	} as unknown as Response;
+	return { ok, json: async () => body } as unknown as Response;
 }
 
 beforeEach(() => {
 	vi.resetAllMocks();
-	__resetKlcPriceCache();
+	__resetKmtPriceCache();
 });
 
-// ---------------------------------------------------------------------------
-// isValidKlcPrice
-// ---------------------------------------------------------------------------
-describe('isValidKlcPrice', () => {
-	it('accepts a sane positive finite number', () => {
-		expect(isValidKlcPrice(0.0022)).toBe(true);
+describe('isValidTokenPrice', () => {
+	it('accepts a sane positive finite number', () => expect(isValidTokenPrice(0.2)).toBe(true));
+	it('rejects 0', () => expect(isValidTokenPrice(0)).toBe(false));
+	it('rejects negative', () => expect(isValidTokenPrice(-1)).toBe(false));
+	it('rejects NaN / Infinity', () => {
+		expect(isValidTokenPrice(NaN)).toBe(false);
+		expect(isValidTokenPrice(Infinity)).toBe(false);
 	});
-
-	it('rejects 0', () => {
-		expect(isValidKlcPrice(0)).toBe(false);
+	it('rejects strings and null', () => {
+		expect(isValidTokenPrice('0.2')).toBe(false);
+		expect(isValidTokenPrice(null)).toBe(false);
 	});
-
-	it('rejects negative', () => {
-		expect(isValidKlcPrice(-1)).toBe(false);
-	});
-
-	it('rejects NaN', () => {
-		expect(isValidKlcPrice(NaN)).toBe(false);
-	});
-
-	it('rejects Infinity', () => {
-		expect(isValidKlcPrice(Infinity)).toBe(false);
-	});
-
-	it('rejects a string that looks like a price', () => {
-		expect(isValidKlcPrice('0.002')).toBe(false);
-	});
-
-	it('rejects null', () => {
-		expect(isValidKlcPrice(null)).toBe(false);
-	});
-
-	it('rejects a value >= 1000', () => {
-		expect(isValidKlcPrice(2000)).toBe(false);
-	});
+	it('rejects a value >= 1000', () => expect(isValidTokenPrice(2000)).toBe(false));
 });
 
-// ---------------------------------------------------------------------------
-// fetchKlcPrice — case 1: DEX success
-// ---------------------------------------------------------------------------
-describe('fetchKlcPrice — DEX success', () => {
-	it('returns the klcPrice from the DEX API', async () => {
-		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
-			mockResponse({ data: { dexOverview: { klcPrice: 0.0022198 } } }),
-		));
-
-		const price = await fetchKlcPrice();
-		expect(price).toBeCloseTo(0.0022198, 7);
+describe('fetchKmtPrice — V3 subgraph bundle', () => {
+	it('returns bundle.ethPriceUSD (the subgraph serialises BigDecimal as a string)', async () => {
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockResponse({ data: { bundles: [{ ethPriceUSD: '0.2' }] } })));
+		expect(await fetchKmtPrice()).toEqual({ usd: 0.2, source: 'subgraph' });
 		expect(global.fetch).toHaveBeenCalledTimes(1);
-	});
-});
-
-// ---------------------------------------------------------------------------
-// fetchKlcPrice — case 2: DEX network throw, CoinGecko success
-// ---------------------------------------------------------------------------
-describe('fetchKlcPrice — DEX throws, CoinGecko success', () => {
-	it('falls through to CoinGecko when DEX fetch rejects', async () => {
-		const fetchMock = vi.fn()
-			.mockRejectedValueOnce(new Error('network error'))
-			.mockResolvedValueOnce(mockResponse({ kalycoin: { usd: 0.00211532 } }));
-
-		vi.stubGlobal('fetch', fetchMock);
-
-		const price = await fetchKlcPrice();
-		expect(price).toBeCloseTo(0.00211532, 8);
-		expect(fetchMock).toHaveBeenCalledTimes(2);
-	});
-});
-
-// ---------------------------------------------------------------------------
-// fetchKlcPrice — case 3: DEX returns invalid value, CoinGecko success
-// ---------------------------------------------------------------------------
-describe('fetchKlcPrice — DEX invalid value, CoinGecko success', () => {
-	it('falls through when klcPrice is 0', async () => {
-		const fetchMock = vi.fn()
-			.mockResolvedValueOnce(mockResponse({ data: { dexOverview: { klcPrice: 0 } } }))
-			.mockResolvedValueOnce(mockResponse({ kalycoin: { usd: 0.00211532 } }));
-
-		vi.stubGlobal('fetch', fetchMock);
-
-		const price = await fetchKlcPrice();
-		expect(price).toBeCloseTo(0.00211532, 8);
+		const [url, init] = vi.mocked(global.fetch).mock.calls[0] as [string, RequestInit];
+		expect(url).toMatch(/v3-subgraph-kmt$/);
+		expect(JSON.parse(init.body as string).query).toContain('bundles');
 	});
 
-	it('falls through when klcPrice is null', async () => {
-		const fetchMock = vi.fn()
-			.mockResolvedValueOnce(mockResponse({ data: { dexOverview: { klcPrice: null } } }))
-			.mockResolvedValueOnce(mockResponse({ kalycoin: { usd: 0.00211532 } }));
-
-		vi.stubGlobal('fetch', fetchMock);
-
-		const price = await fetchKlcPrice();
-		expect(price).toBeCloseTo(0.00211532, 8);
-	});
-});
-
-// ---------------------------------------------------------------------------
-// fetchKlcPrice — case 4: both sources fail
-// ---------------------------------------------------------------------------
-describe('fetchKlcPrice — both sources fail', () => {
-	it('returns BASE_KLC_PRICE when both DEX and CoinGecko reject', async () => {
+	it('falls back (labelled) when the bundle is empty, zero, junk, non-ok or the fetch throws', async () => {
+		for (const body of [{ data: { bundles: [] } }, { data: { bundles: [{ ethPriceUSD: '0' }] } }, { data: { bundles: [{ ethPriceUSD: 'abc' }] } }, {}]) {
+			vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockResponse(body)));
+			expect(await fetchKmtPrice()).toEqual({ usd: BASE_KMT_PRICE, source: 'fallback' });
+		}
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockResponse({}, false)));
+		expect(await fetchKmtPrice()).toEqual({ usd: BASE_KMT_PRICE, source: 'fallback' });
 		vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
-
-		const price = await fetchKlcPrice();
-		expect(price).toBe(BASE_KLC_PRICE);
+		expect(await fetchKmtPrice()).toEqual({ usd: BASE_KMT_PRICE, source: 'fallback' });
 	});
 });
 
-// ---------------------------------------------------------------------------
-// fetchKlcPrice — case 5: DEX returns non-ok response
-// ---------------------------------------------------------------------------
-describe('fetchKlcPrice — DEX non-ok response', () => {
-	it('falls through to CoinGecko on HTTP error from DEX', async () => {
-		const fetchMock = vi.fn()
-			.mockResolvedValueOnce(mockResponse({}, false))
-			.mockResolvedValueOnce(mockResponse({ kalycoin: { usd: 0.00211532 } }));
-
+describe('getKmtPrice — memoization', () => {
+	it('calls fetch once for two rapid calls, then again after a cache reset', async () => {
+		const fetchMock = vi.fn().mockResolvedValue(mockResponse({ data: { bundles: [{ ethPriceUSD: '0.2041' }] } }));
 		vi.stubGlobal('fetch', fetchMock);
-
-		const price = await fetchKlcPrice();
-		expect(price).toBeCloseTo(0.00211532, 8);
-	});
-});
-
-// ---------------------------------------------------------------------------
-// getKlcPrice — case 7: memoization
-// ---------------------------------------------------------------------------
-describe('getKlcPrice — memoization', () => {
-	it('calls fetch only once for two rapid calls, then again after cache reset', async () => {
-		const fetchMock = vi.fn().mockResolvedValue(
-			mockResponse({ data: { dexOverview: { klcPrice: 0.0022198 } } }),
-		);
-		vi.stubGlobal('fetch', fetchMock);
-
-		const p1 = await getKlcPrice();
-		const p2 = await getKlcPrice();
-
-		expect(p1).toBeCloseTo(0.0022198, 7);
-		expect(p2).toBeCloseTo(0.0022198, 7);
-		// Second call must be served from cache — only one network call
+		expect(await getKmtPrice()).toBeCloseTo(0.2041, 6);
+		expect((await getKmtPriceDetailed()).source).toBe('subgraph');
 		expect(fetchMock).toHaveBeenCalledTimes(1);
-
-		// Reset cache → next call should hit the network again
-		__resetKlcPriceCache();
-		await getKlcPrice();
+		__resetKmtPriceCache();
+		await getKmtPrice();
 		expect(fetchMock).toHaveBeenCalledTimes(2);
 	});
 });

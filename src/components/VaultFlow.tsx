@@ -2,7 +2,7 @@ import { Lock, Repeat, Zap } from 'lucide-react';
 import {
 	ACCEPTED_STABLES,
 	APR_FLOOR,
-	BLOCK_REWARD_KLC,
+	BLOCK_REWARD_KMT,
 	FLOW_EXAMPLE_USD,
 	splitPurchase,
 } from '@/lib/tiers';
@@ -23,7 +23,7 @@ export function VaultFlow({ dict, locale }: VaultFlowProps) {
 	const examplePaid = interpolate(f.paidAmount, {
 		amount: formatUSD(FLOW_EXAMPLE_USD, locale),
 	});
-	const rewards = interpolate(f.rewardsStream, { klcPerBlock: BLOCK_REWARD_KLC });
+	const rewards = interpolate(f.rewardsStream, { kmtPerBlock: BLOCK_REWARD_KMT });
 	const floor = interpolate(f.floorNote, { aprFloor: `${Math.round(APR_FLOOR * 100)}%` });
 
 	const wheel = [

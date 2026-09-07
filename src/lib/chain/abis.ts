@@ -9,6 +9,7 @@ export const vaultManagerAbi = parseAbi([
 	'function purchase(uint8 tier, address stable, uint256 deadline) returns (uint256)',
 	'function purchase(uint8 tier, address stable, uint256 deadline, address referrer) returns (uint256)',
 	'function klcUsdPrice() view returns (uint256)',
+	'function paused() view returns (bool)',
 	'function priceAnchorStable() view returns (address)',
 	'function reserveWklc() view returns (uint256)',
 	'function tierCapBps(uint256) view returns (uint256)',

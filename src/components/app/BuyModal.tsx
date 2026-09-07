@@ -5,7 +5,6 @@ import { useReadContract, usePublicClient, useAccount } from 'wagmi';
 import { isAddress } from 'viem';
 import { TIERS, splitPurchase } from '@/lib/tiers';
 import { getAddresses } from '@/lib/chain/addresses';
-import { ACTIVE_NETWORK } from '@/lib/chain/chains';
 import { erc20Abi } from '@/lib/chain/abis';
 import { useApprove, usePurchase } from '@/lib/chain/writes';
 import { waitForSuccess } from '@/lib/chain/receipt';
@@ -15,7 +14,7 @@ import { fmtUsd } from '@/lib/format';
 import { interpolate } from '@/lib/utils';
 import type { Dictionary } from '@/i18n/dictionaries/en';
 
-const A = getAddresses(ACTIVE_NETWORK);
+const A = getAddresses();
 
 // Payment options come from the per-network address book, so a stable enabled on one
 // network (e.g. USDC on testnet) never shows on a network whose config lacks it.

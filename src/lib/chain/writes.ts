@@ -2,12 +2,11 @@
 import { useState } from 'react';
 import { useWriteContract, usePublicClient, useAccount } from 'wagmi';
 import { getAddresses } from './addresses';
-import { ACTIVE_NETWORK } from './chains';
 import { erc20Abi, vaultManagerAbi, rewardsPoolAbi } from './abis';
 import { waitForSuccess } from './receipt';
 import { resolveGas } from './gas';
 
-const A = getAddresses(ACTIVE_NETWORK);
+const A = getAddresses();
 
 // KalyChain (Besu) reports baseFee ~7 wei and eth_maxPriorityFeePerGas = 0, so any wallet
 // that trusts the chain's fee suggestions (viem's default, MetaMask) builds a tx at ~10 wei
