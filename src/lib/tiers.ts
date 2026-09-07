@@ -1,8 +1,14 @@
+import { ADDRESSES } from './chain/addresses';
+
 export const BLOCKS_PER_DAY = 43200;
 export const DAYS_PER_YEAR = 365;
-export const BLOCK_REWARD_KLC = 3;
-export const BASE_KLC_PRICE = 0.0022;
-export const ANNUAL_KLC_TO_POOL = BLOCKS_PER_DAY * BLOCK_REWARD_KLC * DAYS_PER_YEAR; // 47,304,000 KLC/yr
+/** KMT minted to the RewardsPool every block (genesis-3890 transition at block 5100: 0.03 KMT/block, flat). */
+export const BLOCK_REWARD_KMT = 0.03;
+/**
+ * KMT/USD used ONLY when no live price is available: the $0.20 relaunch open price
+ * (110:1 split of the old token). Every rendered figure that uses it is labelled as a fallback.
+ */
+export const BASE_KMT_PRICE = 0.2;
 export const APR_FLOOR = 0.15;
 
 // 8 packs — must match the on-chain tier indices (0..7) of the deployed VaultManager.
@@ -14,7 +20,7 @@ export interface Tier {
 	key: TierKey;
 	name: string;
 	price: number;
-	baseApr: number; // "Return %" — paid in KLC, sets the reward weight
+	baseApr: number; // "Return %" — paid in KMT, sets the reward weight
 	audience: string;
 	featured: boolean;
 	accent: string;
@@ -43,11 +49,11 @@ export interface Projection {
 	monthlyUsd: number;
 	breakevenMonths: number;
 	roi3yrPct: number;
-	klcPriceUsd: number;
+	kmtPriceUsd: number;
 }
 
 /**
- * APR is paid in KLC, so when KLC price moves, the USD APR scales linearly.
+ * APR is paid in KMT, so when KMT price moves, the USD APR scales linearly.
  * Returns are computed against the user's full investment amount.
  */
 export function project({ investmentUsd, baseApr, priceMultiplier }: ProjectionInputs): Projection {
@@ -56,8 +62,8 @@ export function project({ investmentUsd, baseApr, priceMultiplier }: ProjectionI
 	const monthlyUsd = annualUsd / 12;
 	const breakevenMonths = apr > 0 ? 12 / apr : Infinity;
 	const roi3yrPct = apr * 3 * 100;
-	const klcPriceUsd = BASE_KLC_PRICE * priceMultiplier;
-	return { apr, annualUsd, monthlyUsd, breakevenMonths, roi3yrPct, klcPriceUsd };
+	const kmtPriceUsd = BASE_KMT_PRICE * priceMultiplier;
+	return { apr, annualUsd, monthlyUsd, breakevenMonths, roi3yrPct, kmtPriceUsd };
 }
 
 export function tierByKey(key: TierKey): Tier {
@@ -66,8 +72,8 @@ export function tierByKey(key: TierKey): Tier {
 	return t;
 }
 
-/** Stablecoins accepted as payment when purchasing a vault. */
-export const ACCEPTED_STABLES = ['USDT', 'KUSD', 'USDC'] as const;
+/** Stablecoins accepted as payment when purchasing a vault — exactly the keys the VaultManager has enabled. */
+export const ACCEPTED_STABLES: readonly string[] = Object.keys(ADDRESSES.stables);
 
 /** 80/20 split. POL is locked permanent liquidity; the 20% funds growth + ops. */
 export const POL_PCT = 0.80;

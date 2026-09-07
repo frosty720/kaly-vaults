@@ -1,16 +1,11 @@
-import { describe, it, expect, vi, afterEach, beforeAll } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 
-// SUBGRAPH_URL/hasSubgraph are resolved from NEXT_PUBLIC_CHAIN at module load; only mainnet
-// has a subgraph, so the env must be set before the module is imported.
-let fetchAffiliateGraph: typeof import('./subgraph').fetchAffiliateGraph;
-beforeAll(async () => {
-	vi.stubEnv('NEXT_PUBLIC_CHAIN', 'mainnet');
-	vi.resetModules();
-	({ fetchAffiliateGraph } = await import('./subgraph'));
-});
+import { fetchAffiliateGraph, SUBGRAPH_URL, V3_SUBGRAPH_URL } from './subgraph';
+import { ADDRESSES } from './addresses';
 
-const USDT = '0x2CA775C77B922A51FcF3097F52bFFdbc0250D99A'.toLowerCase();
-const KUSD = '0xCd02480926317748e95c5bBBbb7D1070b2327f1A'.toLowerCase();
+// The configured stable (6 dec) and one the address book does NOT list (falls back to 18 dec).
+const USDT = ADDRESSES.stables.USDT.address.toLowerCase();
+const KUSD = '0xFDb3307a16442ed5A7C040AE1600a3B3D3C8e7D9'.toLowerCase();
 const AFF1 = '0x1F425B0F95f939Df6f2a977ea38Cb93FDd91f012';
 const AFF2 = '0xEd60426bF457B1625F3C04ecE1548bF5F7792fe2';
 const BUYER = '0xFcC1D8b5F4B9DAbc954b914A065A8a9128fb3c04';
@@ -113,5 +108,12 @@ describe('fetchAffiliateGraph', () => {
 		expect(legs).toHaveLength(1);
 		expect(legs[0]).toMatchObject({ affiliate: L1, level: 1, usd: 60 });
 		expect(legs.some((l) => l.affiliate === UNQUALIFIED)).toBe(false);
+	});
+});
+
+describe('subgraph endpoints', () => {
+	it('point at the kmt deployments on the kalyswap graph-node', () => {
+		expect(SUBGRAPH_URL).toMatch(/vault-subgraph-kmt$/);
+		expect(V3_SUBGRAPH_URL).toMatch(/v3-subgraph-kmt$/);
 	});
 });

@@ -4,12 +4,12 @@
  * A pinned gas limit is not just a safety cap — combined with `maxFeePerGas` it
  * is a SPEND CEILING. Wallets refuse to sign unless
  * `balance >= gas * maxFeePerGas`, so an over-provisioned constant silently
- * locks out users who hold plenty of KLC for the transaction's real cost.
+ * locks out users who hold plenty of KMT for the transaction's real cost.
  *
  * That is exactly what happened on 2026-07-28: `GAS_PURCHASE` was pinned at
  * 3,000,000 while a real purchase estimates at ~844,000. At 30 gwei the wallet
- * demanded 0.09 KLC to sign a transaction that actually costs ~0.025 KLC. A
- * buyer holding 0.0498 KLC could afford `approve` (100k gas → 0.003 KLC) but
+ * demanded 0.09 KMT to sign a transaction that actually costs ~0.025 KMT. A
+ * buyer holding 0.0498 KMT could afford `approve` (100k gas → 0.003 KMT) but
  * not `purchase`, so their approval landed on-chain and the purchase never did.
  *
  * So: prefer a live estimate plus headroom, and fall back to the pinned ceiling

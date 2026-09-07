@@ -2,11 +2,11 @@ import type { Dictionary } from './en';
 
 const fr: Dictionary = {
 	meta: {
-		title: 'Coffre-fort KalyChain — Gagnez du KLC passif adossé à la chaîne',
+		title: 'Coffre-fort KalyChain — Gagnez du KMT passif adossé à la chaîne',
 		description:
-			'Chaque bloc produit par KalyChain est reversé directement aux détenteurs du Coffre. Achetez une fois, gagnez du KLC passif. La vente est en direct — achetez un pack et commencez à gagner à chaque bloc.',
+			'Chaque bloc produit par KalyChain est reversé directement aux détenteurs du Coffre. Achetez une fois, gagnez du KMT passif — huit packs de 50 $ à 100 000 $.',
 		ogDescription:
-			'Chaque bloc produit par KalyChain va directement aux détenteurs du Coffre. Huit packs de 50 $ à 100 000 $, qui augmentent avec le prix du KLC.',
+			'Chaque bloc produit par KalyChain va directement aux détenteurs du Coffre. Huit packs de 50 $ à 100 000 $, qui augmentent avec le prix du KMT.',
 	},
 
 	nav: {
@@ -15,17 +15,39 @@ const fr: Dictionary = {
 		kusd: 'KUSD',
 		rails: 'KalyRails',
 		docs: 'Docs',
-		joinWaitlist: 'Liste d\'attente',
 		launchApp: "Lancer l\'app",
 	},
 
+	// Affiché une fois par navigateur (voir CutoverNotice) jusqu'à fermeture — annonce la relance de la chaîne.
+	cutover: {
+		badge: 'Nouvelle chaîne en ligne',
+		title: 'KalyChain a migré vers une nouvelle chaîne',
+		body: 'KalyChain a été relancé. Le KLC devient le KMT au ratio de 110:1 — vos coffres, récompenses et soldes ont été migrés automatiquement.',
+		action: 'Connectez votre portefeuille au nouveau réseau pour continuer.',
+		// {wallet} = le nom du portefeuille (MetaMask, Rabby, …) — plusieurs peuvent être
+		// installés, nommer celui qui est sollicité rend la demande repérable.
+		addNetwork: 'Ajouter le réseau dans {wallet}',
+		adding: 'Vérifiez {wallet}…',
+		pickWallet: 'Plusieurs portefeuilles sont installés — choisissez celui que vous utilisez ici.',
+		added: 'Connecté à {network}. Vous êtes sur la nouvelle chaîne.',
+		cancelled: 'Demande annulée dans {wallet}. Rien n\'a changé — vous pouvez réessayer.',
+		wrongChain: '{wallet} a accepté la demande mais reste sur un autre réseau. Ouvrez-le et basculez sur « {network} » manuellement.',
+		noWallet: 'Vous utilisez le portefeuille Kaly intégré ? Rien à faire — il se connecte automatiquement au nouveau réseau.',
+		error: '{wallet} n\'a pas pu ajouter le réseau. S\'il possède déjà une entrée KalyChain utilisant ce RPC, supprimez-la puis réessayez.',
+		dismiss: 'Continuer',
+	},
+
 	hero: {
-		badge: 'Vente du Coffre en direct',
+		badge: 'Coffres KalyChain',
+		badgeLive: 'Vente du Coffre en direct',
+		badgePaused: 'Ventes suspendues pendant la relance de KalyChain',
 		headlineBefore: 'Gagnez',
-		headlineAccent: 'du KLC passif',
+		headlineAccent: 'du KMT passif',
 		headlineAfter: 'adossé à la chaîne elle-même',
 		subhead:
-			'Chaque bloc produit par KalyChain est reversé directement aux détenteurs du Coffre. Achetez une fois, gagnez du KLC passif. La vente est en direct — choisissez un pack et commencez à gagner à chaque bloc.',
+			'Chaque bloc produit par KalyChain est reversé directement aux détenteurs du Coffre. Achetez une fois, gagnez du KMT passif — choisissez un pack et commencez à gagner à chaque bloc.',
+		subheadPaused:
+			'Chaque bloc produit par KalyChain est reversé directement aux détenteurs du Coffre. Les ventes sont suspendues pendant la relance de KalyChain sur le KMT — les coffres existants migrent automatiquement et les ventes reprennent à la bascule.',
 		stats: {
 			blocksPerDay: 'Blocs par jour',
 			rewardPerBlock: 'Récompense par bloc',
@@ -33,28 +55,20 @@ const fr: Dictionary = {
 			tiers: 'Pour chaque investisseur',
 			tiersValue: '8 packs',
 		},
-		countdown: {
-			title: 'Lancement public dans',
-			launched: 'Le coffre est en ligne',
-			days: 'Jours',
-			hours: 'Heures',
-			minutes: 'Minutes',
-			seconds: 'Secondes',
-		},
 	},
 
 	calculator: {
 		sectionTitle: 'Calculateur d\'investissement',
 		investmentAmount: 'Montant à investir',
 		vaultTier: 'Palier du Coffre (détermine votre APR)',
-		klcPriceScenario: 'Scénario de prix du KLC',
+		klcPriceScenario: 'Scénario de prix du KMT',
 		priceToday: 'aujourd\'hui',
 		priceTimesToday: '× aujourd\'hui',
 		baseNftPrice: 'Prix de base du NFT',
 		target: 'cible',
 		projectedReturns: 'Rendements projetés',
 		effectiveApr: 'APR effectif',
-		breakdown: '= {base} de base × {mult} prix du KLC',
+		breakdown: '= {base} de base × {mult} prix du KMT',
 		annual: 'Annuel',
 		monthly: 'Mensuel',
 		breakeven: 'Seuil de rentabilité',
@@ -62,7 +76,7 @@ const fr: Dictionary = {
 		mappingPrefix: 'Votre',
 		mappingMiddle: '≈',
 		mappingSuffix:
-			'. Les récompenses sont payées en KLC, donc vos gains en dollars évoluent linéairement avec le prix du KLC.',
+			'. Les récompenses sont payées en KMT, donc vos gains en dollars évoluent linéairement avec le prix du KMT.',
 		nftSingular: '{n} NFT {name}',
 		nftPlural: '{n} NFT {name}',
 		nftFractional: '{n}× un NFT {name}',
@@ -71,92 +85,64 @@ const fr: Dictionary = {
 	tiers: {
 		sectionTitle: 'Les 8 paliers du Coffre',
 		valuesShownAt: 'Valeurs affichées à',
-		klcPriceSuffix: 'du prix du KLC',
+		klcPriceSuffix: 'du prix du KMT',
 		mostPopular: 'Le plus populaire',
-		joinWaitlist: 'Liste d\'attente',
 		apr: 'APR',
 		annual: 'Annuel',
 		monthly: 'Mensuel',
 		breakeven: 'Rentabilité',
 		roi3yr: 'ROI 3 ans',
 		audiences: {
-			light: 'Tout le monde',
-			validator: 'Investisseurs crypto',
-			enterprise: 'Fintechs & entreprises',
-			consortium: 'Institutions',
-			genesis: 'Fonds & gros porteurs',
+			starter: 'Tout le monde',
+			basic: 'Pour débuter',
+			pro1k: 'Investisseurs crypto',
+			pro5k: 'PME',
+			premium10k: 'Entreprises',
+			premium25k: 'Institutions',
+			elite50k: 'Fonds',
+			whale100k: 'Gros porteurs',
 		},
 	},
 
 	scaling: {
-		boldLead: 'Les rendements évoluent avec le prix du KLC.',
-		body: 'Les chiffres utilisent le prix actuel du KLC ({todayPrice}). Comme les récompenses sont payées en KLC, vos rendements en dollars sont multipliés à chaque hausse de prix.',
-		at2x: 'À 2× le prix : Genesis génère {val}/an.',
+		boldLead: 'Les rendements évoluent avec le prix du KMT.',
+		body: 'Les chiffres utilisent le prix actuel du KMT ({todayPrice}). Comme les récompenses sont payées en KMT, vos rendements en dollars sont multipliés à chaque hausse de prix.',
+		at2x: 'À 2× le prix : Whale 100K génère {val}/an.',
 		at5x: 'À 5× : {val}/an.',
 		at10x: 'À 10× : {val}/an.',
 		floor:
-			'La récompense KLC sous-jacente est fixe — votre potentiel ne l\'est pas. Un plancher d\'APR de 15 % protège tous les détenteurs de la dilution à mesure que le Coffre se remplit.',
+			'La récompense KMT sous-jacente est fixe — votre potentiel ne l\'est pas. Un plancher d\'APR de 15 % protège tous les détenteurs de la dilution à mesure que le Coffre se remplit.',
 	},
 
 	flow: {
 		sectionLabel: 'Comment fonctionne le Coffre',
-		heading: 'Chaque achat renforce le KLC',
+		heading: 'Chaque achat renforce le KMT',
 		step1Label: 'Où va chaque dollar',
 		step2Label: 'Ce qui arrive aux 80 %',
 		step3Label: 'Pourquoi l\'effet se renforce',
 		feesShare: '20 % croissance & ops',
 		polShare: '80 % → Liquidité détenue par le protocole',
 		feesCaption: '20 % : 10 % affiliation (3 niveaux) · 2 % dev · 8 % DAO',
-		polCaption: '80 % achète du KLC et le verrouille en liquidité',
+		polCaption: '80 % achète du KMT et le verrouille en liquidité',
 		polMechanism:
-			'Chaque achat achète du KLC sur le marché libre et l\'apparie en liquidité verrouillée détenue par le protocole. Au début, le protocole ajoute du KLC de sa propre réserve pour approfondir instantanément les nouveaux pools — à mesure que la liquidité grandit, les achats basculent vers l\'achat de la totalité de leur KLC sur le marché.',
+			'Chaque achat achète du KMT sur le marché libre et l\'apparie en liquidité verrouillée détenue par le protocole. Au début, le protocole ajoute du KMT de sa propre réserve pour approfondir instantanément les nouveaux pools — à mesure que la liquidité grandit, les achats basculent vers l\'achat de la totalité de leur KMT sur le marché.',
 		paidLabel: 'Vous achetez un coffre',
 		paidAmount: '{amount} versé',
 		acceptedPrefix: 'en',
-		swapToKlc: '50 % converti en KLC',
-		pairedLp: 'injecté en LP KLC/stable',
+		swapToKlc: '50 % converti en KMT',
+		pairedLp: 'injecté en LP KMT/stable',
 		lockedForever: 'Verrouillé pour toujours',
 		treasury: 'dans la Trésorerie de la DAO',
 		rewardsTitle: 'Et pour toujours, en parallèle',
 		rewardsStream:
-			'À chaque bloc : {klcPerBlock} KLC → RewardsPool → versés à vous, au prorata de votre coffre · les frais du DEX sur la LP verrouillée s\'y ajoutent',
+			'À chaque bloc : {kmtPerBlock} KMT → RewardsPool → versés à vous, au prorata de votre coffre · les frais du DEX sur la LP verrouillée s\'y ajoutent',
 		wheelMoreSales: 'Plus de ventes de coffres',
 		wheelDeeperLiquidity: 'Liquidité verrouillée plus profonde',
-		wheelPriceUp: 'Le prix du KLC monte',
+		wheelPriceUp: 'Le prix du KMT monte',
 		wheelHigherApr: 'APR effectif plus élevé',
 		wheelCenter: 'Le cercle vertueux',
 		floorNote:
 			'La liquidité n\'est jamais retirée, elle ne fait que s\'approfondir — et un plancher d\'APR de {aprFloor} met en pause les ventes avant toute dilution des détenteurs.',
-	},
-
-	waitlist: {
-		sectionLabel: 'Réservez votre Coffre',
-		headline: 'Bloquez un prix anticipé avant le lancement public',
-		subhead:
-			'Chaque tranche vendue fait monter le prix — plus vous vous inscrivez tôt, meilleure est votre position. Les inscrits à la liste obtiennent l\'APR le plus élevé disponible.',
-		bullets: [
-			'Aucun paiement requis pour rejoindre la liste d\'attente',
-			'Accès anticipé 48 heures avant la vente publique',
-			'Prix de la whitelist garanti pendant 72 heures après le lancement',
-		],
-		emailLabel: 'Adresse e-mail',
-		emailPlaceholder: 'vous@exemple.com',
-		emailError: 'Saisissez une adresse e-mail valide',
-		walletLabel: 'Adresse du portefeuille',
-		walletPlaceholder: '0x…',
-		walletError: 'Doit être une adresse EVM 0x valide',
-		tierLabel: 'Palier qui vous intéresse (optionnel)',
-		tierNotSure: 'Je ne sais pas encore',
-		submit: 'Rejoindre la liste d\'attente →',
-		submitting: 'Envoi…',
-		errorPrefix: 'Une erreur s\'est produite :',
-		errorFallback: 'veuillez réessayer.',
-		successTitle: 'Vous êtes sur la liste',
-		successBody:
-			'L\'accès anticipé ouvre 48 heures avant la vente publique. Nous vous enverrons les instructions par e-mail le moment venu. Votre prix whitelist est verrouillé pendant 72 heures après le lancement.',
-		duplicateTitle: 'Vous êtes déjà sur la liste',
-		duplicateBody:
-			'Bonne nouvelle — cet e-mail est déjà enregistré. Nous vous contacterons avec les détails d\'accès anticipé 48 heures avant la vente publique.',
 	},
 
 	footer: {
@@ -167,7 +153,6 @@ const fr: Dictionary = {
 			telegram: 'Telegram',
 			discord: 'Discord',
 			docs: 'Docs',
-			terms: 'Mentions légales',
 		},
 	},
 
@@ -177,7 +162,7 @@ const fr: Dictionary = {
 
 	app: {
 		connectWallet: 'Connecter le portefeuille',
-		footerNote: 'Tous les chiffres sont lus en direct depuis KalyChain. Stablecoins valorisés à 1 $ ; KLC au prix en direct.',
+		footerNote: 'Tous les chiffres sont lus en direct depuis KalyChain. Stablecoins valorisés à 1 $ ; KMT au prix en direct.',
 		pol: {
 			label: 'Liquidité détenue par le protocole',
 			liveValue: 'valeur en direct',
@@ -198,7 +183,7 @@ const fr: Dictionary = {
 			mintedLabel: 'Coffres créés',
 			mintedSub: 'NFT émis',
 			aprLabel: 'APR de base',
-			aprSub: 'Payé en KLC, par palier',
+			aprSub: 'Payé en KMT, par palier',
 		},
 		buy: {
 			headingBefore: 'Choisissez votre',
@@ -209,6 +194,9 @@ const fr: Dictionary = {
 			buyTier: 'Acheter {name}',
 			connectToBuy: 'Connectez-vous pour acheter',
 			aprSuffix: 'APR',
+			pausedTitle: 'Ventes suspendues.',
+			pausedBody: 'KalyChain se relance sur le KMT. Les coffres existants migrent automatiquement ; les achats reprennent à la bascule.',
+			pausedButton: 'Ventes suspendues',
 		},
 		modal: {
 			title: 'Acheter un coffre',
@@ -221,7 +209,7 @@ const fr: Dictionary = {
 			invalidAddress: 'Adresse invalide',
 			flowTitle: 'Comment vos fonds circulent',
 			polRow: 'Liquidité détenue par le protocole (80 %)',
-			swappedToKlc: 'Échangé contre du KLC',
+			swappedToKlc: 'Échangé contre du KMT',
 			pairedLp: 'Apparié en LP stable',
 			feesRow: 'Croissance & opérations (20 %)',
 			affiliate: 'Affiliation (3 niveaux)',
@@ -247,7 +235,7 @@ const fr: Dictionary = {
 			title: 'Votre position',
 			claimableNow: 'Réclamable maintenant',
 			error: 'Impossible de charger les récompenses',
-			priceUnavailable: 'Prix du KLC indisponible',
+			priceUnavailable: 'Prix du KMT indisponible',
 			claim: 'Réclamer',
 			claiming: 'Réclamation…',
 			invested: 'Investi',
@@ -265,7 +253,7 @@ const fr: Dictionary = {
 		},
 		connect: {
 			title: 'Connectez-vous pour gérer vos coffres',
-			body: 'Connectez-vous par e-mail, compte social ou tout portefeuille pour voir votre position, réclamer vos récompenses KLC et acheter des coffres. Le même identifiant fonctionne sur KalySwap et Kaly Vaults.',
+			body: 'Connectez-vous par e-mail, compte social ou tout portefeuille pour voir votre position, réclamer vos récompenses KMT et acheter des coffres. Le même identifiant fonctionne sur KalySwap et Kaly Vaults.',
 		},
 		affiliate: {
 			title: 'Votre tableau de bord d\'affiliation',

@@ -1,7 +1,7 @@
 'use client';
 
 import * as Slider from '@radix-ui/react-slider';
-import { BASE_KLC_PRICE } from '@/lib/tiers';
+import { BASE_KMT_PRICE } from '@/lib/tiers';
 import { formatUSD } from '@/lib/utils';
 import type { Dictionary } from '@/i18n/dictionaries/en';
 import type { Locale } from '@/i18n/config';
@@ -13,8 +13,8 @@ interface PriceSliderProps {
 	max?: number;
 	dict: Dictionary;
 	locale: Locale;
-	/** Live KLC/USD base price; falls back to the hardcoded constant. */
-	klcPrice?: number;
+	/** Live KMT/USD base price; falls back to the labelled BASE_KMT_PRICE. */
+	kmtPrice?: number;
 }
 
 export function PriceSlider({
@@ -24,10 +24,10 @@ export function PriceSlider({
 	max = 20,
 	dict,
 	locale,
-	klcPrice = BASE_KLC_PRICE,
+	kmtPrice = BASE_KMT_PRICE,
 }: PriceSliderProps) {
 	const presets = [1, 2, 5, 10, 20];
-	const currentPrice = klcPrice * multiplier;
+	const currentPrice = kmtPrice * multiplier;
 
 	return (
 		<div>
@@ -81,9 +81,9 @@ export function PriceSlider({
 			</Slider.Root>
 
 			<div className="mt-2 flex justify-between text-[10px] uppercase tracking-wider text-white/40">
-				<span>1× ({formatUSD(klcPrice, locale, { decimals: 4 })})</span>
+				<span>1× ({formatUSD(kmtPrice, locale, { decimals: 4 })})</span>
 				<span>
-					{max}× ({formatUSD(klcPrice * max, locale, { decimals: 3 })})
+					{max}× ({formatUSD(kmtPrice * max, locale, { decimals: 3 })})
 				</span>
 			</div>
 		</div>

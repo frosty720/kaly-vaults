@@ -1,10 +1,10 @@
 const en = {
 	meta: {
-		title: 'KalyChain Vault — Earn passive KLC backed by the chain',
+		title: 'KalyChain Vault — Earn passive KMT backed by the chain',
 		description:
-			'Every block KalyChain produces flows directly to Vault holders. Buy once, earn passive KLC. The sale is live — buy a pack and start earning every block.',
+			'Every block KalyChain produces flows directly to Vault holders. Buy once, earn passive KMT — eight packs from $50 to $100k.',
 		ogDescription:
-			'Every block KalyChain produces flows directly to Vault holders. Eight packs from $50 to $100k, scaling with KLC price.',
+			'Every block KalyChain produces flows directly to Vault holders. Eight packs from $50 to $100k, scaling with KMT price.',
 	},
 
 	nav: {
@@ -13,17 +13,40 @@ const en = {
 		kusd: 'KUSD',
 		rails: 'KalyRails',
 		docs: 'Docs',
-		joinWaitlist: 'Join Waitlist',
 		launchApp: 'Launch App',
 	},
 
+	// Shown once per browser (see CutoverNotice) until dismissed — announces the chain relaunch.
+	cutover: {
+		badge: 'New chain live',
+		title: 'KalyChain has moved to a new chain',
+		body: 'KalyChain has relaunched. KLC is now KMT at a 110:1 ratio — your vaults, rewards, and balances were migrated automatically.',
+		action: 'Connect your wallet to the new network to continue.',
+		// {wallet} is the wallet's own name (MetaMask, Rabby, …) — users run several at once,
+		// so naming the one being asked is what makes the prompt findable.
+		addNetwork: 'Add network in {wallet}',
+		adding: 'Check {wallet}…',
+		pickWallet: 'You have more than one wallet installed — pick the one you use here.',
+		added: 'Connected to {network}. You\'re on the new chain.',
+		cancelled: 'Request cancelled in {wallet}. Nothing changed — you can try again.',
+		wrongChain: '{wallet} accepted the request but is still on another network. Open it and switch to "{network}" manually.',
+		noWallet: 'Using the built-in Kaly wallet? Nothing to do — it connects to the new network automatically.',
+		error: '{wallet} could not add the network. If it already has a KalyChain entry using this RPC, remove that old entry first, then try again.',
+		dismiss: 'Continue',
+	},
+
 	hero: {
-		badge: 'Vault Sale Now Live',
+		// Chosen at render time from VaultManager.paused(): live / paused / unknown (neutral)
+		badge: 'KalyChain Vaults',
+		badgeLive: 'Vault Sale Now Live',
+		badgePaused: 'Vault sales paused for the KalyChain relaunch',
 		headlineBefore: 'Earn',
-		headlineAccent: 'passive KLC',
+		headlineAccent: 'passive KMT',
 		headlineAfter: 'backed by the chain itself',
 		subhead:
-			'Every block KalyChain produces flows directly to Vault holders. Buy once, earn passive KLC. The sale is live — pick a pack and start earning every block.',
+			'Every block KalyChain produces flows directly to Vault holders. Buy once, earn passive KMT — pick a pack and start earning every block.',
+		subheadPaused:
+			'Every block KalyChain produces flows directly to Vault holders. Sales are paused while KalyChain relaunches on KMT — existing vaults migrate automatically and sales reopen at the cut-over.',
 		stats: {
 			blocksPerDay: 'Blocks per day',
 			rewardPerBlock: 'Reward per block',
@@ -31,21 +54,13 @@ const en = {
 			tiers: 'For every investor',
 			tiersValue: '8 Packs',
 		},
-		countdown: {
-			title: 'Public launch in',
-			launched: 'The vault is live',
-			days: 'Days',
-			hours: 'Hours',
-			minutes: 'Minutes',
-			seconds: 'Seconds',
-		},
 	},
 
 	calculator: {
 		sectionTitle: 'Investment Calculator',
 		investmentAmount: 'Investment Amount',
 		vaultTier: 'Vault Tier (sets your APR)',
-		klcPriceScenario: 'KLC Price Scenario',
+		klcPriceScenario: 'KMT Price Scenario',
 		priceToday: 'today',
 		priceTimesToday: '× today',
 		baseNftPrice: 'NFT base price',
@@ -53,7 +68,7 @@ const en = {
 		projectedReturns: 'Projected Returns',
 		effectiveApr: 'Effective APR',
 		// Template — use interpolate(..., { base, mult })
-		breakdown: '= {base} base × {mult} KLC price',
+		breakdown: '= {base} base × {mult} KMT price',
 		annual: 'Annual',
 		monthly: 'Monthly',
 		breakeven: 'Break-even',
@@ -61,7 +76,7 @@ const en = {
 		mappingPrefix: 'Your',
 		mappingMiddle: '≈',
 		mappingSuffix:
-			'. Rewards are paid in KLC, so dollar returns scale linearly with KLC price.',
+			'. Rewards are paid in KMT, so dollar returns scale linearly with KMT price.',
 		// Template — { n, name }
 		nftSingular: '{n} {name} NFT',
 		nftPlural: '{n} {name} NFTs',
@@ -71,97 +86,70 @@ const en = {
 	tiers: {
 		sectionTitle: 'The 8 Vault Tiers',
 		valuesShownAt: 'All values shown at',
-		klcPriceSuffix: 'KLC price',
+		klcPriceSuffix: 'KMT price',
 		mostPopular: 'Most Popular',
-		joinWaitlist: 'Join Waitlist',
 		apr: 'APR',
 		annual: 'Annual',
 		monthly: 'Monthly',
 		breakeven: 'Break-even',
 		roi3yr: '3-yr ROI',
+		// Keyed by TierKey (src/lib/tiers.ts)
 		audiences: {
-			light: 'Everyone',
-			validator: 'Crypto investors',
-			enterprise: 'Fintechs & business',
-			consortium: 'Institutions',
-			genesis: 'Funds & whales',
+			starter: 'Everyone',
+			basic: 'Getting started',
+			pro1k: 'Crypto investors',
+			pro5k: 'SMEs',
+			premium10k: 'Enterprises',
+			premium25k: 'Institutions',
+			elite50k: 'Funds',
+			whale100k: 'Whales',
 		},
 	},
 
 	scaling: {
-		boldLead: 'Returns scale with KLC price.',
+		boldLead: 'Returns scale with KMT price.',
 		// Template — { todayPrice }
-		body: 'Figures use today\'s KLC price ({todayPrice}). Because rewards are paid in KLC, your USD returns multiply with every price move.',
+		body: 'Figures use today\'s KMT price ({todayPrice}). Because rewards are paid in KMT, your USD returns multiply with every price move.',
 		// Template — { val }
-		at2x: 'At 2× price: Genesis earns {val}/yr.',
+		at2x: 'At 2× price: Whale 100K earns {val}/yr.',
 		at5x: 'At 5×: {val}/yr.',
 		at10x: 'At 10×: {val}/yr.',
 		floor:
-			'The underlying KLC reward is fixed — your upside is not. An APR floor of 15% protects all holders from dilution as the vault fills.',
+			'The underlying KMT reward is fixed — your upside is not. An APR floor of 15% protects all holders from dilution as the vault fills.',
 	},
 
 	flow: {
 		sectionLabel: 'How the Vault works',
-		heading: 'Every purchase makes KLC stronger',
+		heading: 'Every purchase makes KMT stronger',
 		step1Label: 'Where every dollar goes',
 		step2Label: 'What happens to the 80%',
 		step3Label: 'Why it keeps compounding',
 		feesShare: '20% growth & ops',
 		polShare: '80% → Protocol-Owned Liquidity',
 		feesCaption: '20%: 10% affiliate (3 levels) · 2% dev · 8% DAO',
-		polCaption: '80% buys KLC and locks it as liquidity',
+		polCaption: '80% buys KMT and locks it as liquidity',
 		polMechanism:
-			'Every purchase buys KLC on the open market and pairs it into locked, protocol-owned liquidity. Early on, the protocol adds KLC from its own reserve to deepen new pools instantly — as liquidity grows, purchases shift to buying all their KLC on the market.',
+			'Every purchase buys KMT on the open market and pairs it into locked, protocol-owned liquidity. Early on, the protocol adds KMT from its own reserve to deepen new pools instantly — as liquidity grows, purchases shift to buying all their KMT on the market.',
 		paidLabel: 'You buy a vault',
 		// Template — { amount }
 		paidAmount: '{amount} paid',
 		acceptedPrefix: 'in',
-		swapToKlc: '50% swapped to KLC',
-		pairedLp: 'paired into KLC/stable LP',
+		swapToKlc: '50% swapped to KMT',
+		pairedLp: 'paired into KMT/stable LP',
 		lockedForever: 'Locked forever',
 		treasury: 'in DAO Treasury',
 		rewardsTitle: 'And forever, in parallel',
 		// Template — { klcPerBlock }
 		rewardsStream:
-			'Every block: {klcPerBlock} KLC → RewardsPool → paid to you, proportional to your vault · DEX fees on the locked LP top it up',
+			'Every block: {kmtPerBlock} KMT → RewardsPool → paid to you, proportional to your vault · DEX fees on the locked LP top it up',
 		wheelMoreSales: 'More vault sales',
 		wheelDeeperLiquidity: 'Deeper locked liquidity',
-		wheelPriceUp: 'KLC price rises',
+		wheelPriceUp: 'KMT price rises',
 		wheelHigherApr: 'Higher effective APR',
 		wheelCenter: 'The Flywheel',
 		// Template — { aprFloor }
 		floorNote:
 			'Liquidity is never withdrawn, so it only deepens — and a {aprFloor} APR floor pauses sales before holders get diluted.',
-	},
-
-	waitlist: {
-		sectionLabel: 'Reserve Your Vault',
-		headline: 'Lock in early pricing before public launch',
-		subhead:
-			'Each tranche sold raises the price — the sooner you join, the better your position. Waitlist members get the highest available APR.',
-		bullets: [
-			'No payment required to join the waitlist',
-			'Early access 48 hours before public sale',
-			'Whitelist price guaranteed for 72 hours after launch',
-		],
-		emailLabel: 'Email',
-		emailPlaceholder: 'you@example.com',
-		emailError: 'Enter a valid email address',
-		walletLabel: 'Wallet address',
-		walletPlaceholder: '0x…',
-		walletError: 'Must be a valid 0x EVM address',
-		tierLabel: 'Tier interest (optional)',
-		tierNotSure: 'Not sure yet',
-		submit: 'Join the Vault Waitlist →',
-		submitting: 'Submitting…',
-		errorPrefix: 'Something went wrong:',
-		errorFallback: 'please try again.',
-		successTitle: 'You\'re on the list',
-		successBody:
-			'Early access opens 48 hours before public sale. We\'ll email instructions when it\'s time. Your whitelist price is locked for 72 hours after launch.',
-		duplicateTitle: 'You\'re already on the list',
-		duplicateBody:
-			'Good news — that email is already registered. We\'ll reach out with early access details 48 hours before public sale.',
 	},
 
 	footer: {
@@ -172,7 +160,6 @@ const en = {
 			telegram: 'Telegram',
 			discord: 'Discord',
 			docs: 'Docs',
-			terms: 'Terms',
 		},
 	},
 
@@ -182,7 +169,7 @@ const en = {
 
 	app: {
 		connectWallet: 'Connect Wallet',
-		footerNote: 'All figures are read live from KalyChain. Stablecoins valued at $1; KLC priced live.',
+		footerNote: 'All figures are read live from KalyChain. Stablecoins valued at $1; KMT priced live.',
 		pol: {
 			label: 'Protocol-Owned Liquidity',
 			liveValue: 'live value',
@@ -203,7 +190,7 @@ const en = {
 			mintedLabel: 'Vaults Minted',
 			mintedSub: 'NFTs issued',
 			aprLabel: 'Base APR',
-			aprSub: 'Paid in KLC, per tier',
+			aprSub: 'Paid in KMT, per tier',
 		},
 		buy: {
 			headingBefore: 'Choose your',
@@ -214,6 +201,9 @@ const en = {
 			buyTier: 'Buy {name}',
 			connectToBuy: 'Connect to buy',
 			aprSuffix: 'APR',
+			pausedTitle: 'Sales paused.',
+			pausedBody: 'KalyChain is relaunching on KMT. Existing vaults migrate automatically; purchases reopen at the cut-over.',
+			pausedButton: 'Sales paused',
 		},
 		modal: {
 			title: 'Purchase Vault',
@@ -226,7 +216,7 @@ const en = {
 			invalidAddress: 'Invalid address',
 			flowTitle: 'How your funds flow',
 			polRow: 'Protocol-owned liquidity (80%)',
-			swappedToKlc: 'Swapped to KLC',
+			swappedToKlc: 'Swapped to KMT',
 			pairedLp: 'Paired as stable LP',
 			feesRow: 'Growth & operations (20%)',
 			affiliate: 'Affiliate (3 levels)',
@@ -252,7 +242,7 @@ const en = {
 			title: 'Your Position',
 			claimableNow: 'Claimable now',
 			error: 'Couldn\'t load rewards',
-			priceUnavailable: 'KLC price unavailable',
+			priceUnavailable: 'KMT price unavailable',
 			claim: 'Claim',
 			claiming: 'Claiming…',
 			invested: 'Invested',
@@ -270,7 +260,7 @@ const en = {
 		},
 		connect: {
 			title: 'Connect to manage your vaults',
-			body: 'Sign in with email, a social account, or any wallet to view your position, claim KLC rewards, and buy vaults. The same login works across KalySwap and Kaly Vaults.',
+			body: 'Sign in with email, a social account, or any wallet to view your position, claim KMT rewards, and buy vaults. The same login works across KalySwap and Kaly Vaults.',
 		},
 		affiliate: {
 			title: 'Your affiliate dashboard',

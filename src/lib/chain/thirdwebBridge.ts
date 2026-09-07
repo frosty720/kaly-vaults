@@ -22,9 +22,9 @@ import { EIP1193 } from 'thirdweb/wallets';
 import type { EIP1193Provider } from 'viem';
 import type { Chain as ThirdwebChain } from 'thirdweb';
 import { thirdwebClient, twActiveChain } from './thirdweb';
-import { activeChain, ACTIVE_NETWORK } from './chains';
+import { kalychain } from './chains';
 
-const WAGMI_CHAIN = activeChain(ACTIVE_NETWORK);
+const WAGMI_CHAIN = kalychain;
 
 function createThirdwebWagmiConnector(getProvider: () => EIP1193Provider) {
 	return createConnector(() => ({

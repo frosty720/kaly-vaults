@@ -7,6 +7,7 @@ import { interpolate } from '@/lib/utils';
 import type { Dictionary } from '@/i18n/dictionaries/en';
 import type { Locale } from '@/i18n/config';
 import { BuyModal } from './BuyModal';
+import { useSalesPaused } from '@/lib/chain/reads';
 
 interface BuySectionProps {
 	addr?: `0x${string}`;
@@ -18,10 +19,13 @@ interface BuySectionProps {
 	locale: Locale;
 }
 
-export function BuySection({ addr, onPurchased, onNeedConnect, t, tModal, locale: _locale }: BuySectionProps) {
+export function BuySection({ addr, onPurchased, onNeedConnect, t, tModal }: BuySectionProps) {
 	const [openTierIndex, setOpenTierIndex] = useState<number | null>(null);
+	const paused = useSalesPaused();
+	const salesPaused = paused.data === true;
 
 	function handleTierClick(index: number) {
+		if (salesPaused) return;
 		if (addr) setOpenTierIndex(index);
 		else onNeedConnect?.();
 	}
@@ -35,6 +39,12 @@ export function BuySection({ addr, onPurchased, onNeedConnect, t, tModal, locale
 				<span className="text-xs text-white/40">{t.subtitle}</span>
 			</div>
 
+			{salesPaused && (
+				<div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+					<span className="font-semibold">{t.pausedTitle}</span> {t.pausedBody}
+				</div>
+			)}
+
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 				{TIERS.map((tier, index) => {
 					const featured = tier.featured;
@@ -43,9 +53,11 @@ export function BuySection({ addr, onPurchased, onNeedConnect, t, tModal, locale
 							key={tier.key}
 							type="button"
 							onClick={() => handleTierClick(index)}
+							disabled={salesPaused}
+							aria-disabled={salesPaused}
 							className={`tier-card fade-up text-left p-5 flex flex-col gap-4 ${
 								featured ? 'tier-card-featured' : ''
-							}`}
+							} ${salesPaused ? 'opacity-60 cursor-not-allowed' : ''}`}
 							style={{ animationDelay: `${index * 70}ms` }}
 						>
 							<div className="flex items-center justify-between">
@@ -77,7 +89,7 @@ export function BuySection({ addr, onPurchased, onNeedConnect, t, tModal, locale
 							<p className="text-xs text-white/45">{tier.audience}</p>
 
 							<span className="mt-auto inline-flex items-center justify-center rounded-lg bg-white/[0.06] border border-white/10 px-4 py-2 text-sm font-semibold text-white transition-colors group-hover:border-amber-500/40">
-								{addr ? interpolate(t.buyTier, { name: tier.name }) : t.connectToBuy}
+								{salesPaused ? t.pausedButton : addr ? interpolate(t.buyTier, { name: tier.name }) : t.connectToBuy}
 							</span>
 						</button>
 					);

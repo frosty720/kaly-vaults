@@ -1,6 +1,4 @@
-import { ACTIVE_NETWORK } from './chains';
 import { getAddresses } from './addresses';
-import type { NetworkName } from './chains';
 import type { SponsorEdge, FeeLeg, FeeSplit } from './affiliate';
 import { paidLegs, DEFAULT_FEE_SPLIT } from './affiliate';
 
@@ -9,32 +7,23 @@ import { paidLegs, DEFAULT_FEE_SPLIT } from './affiliate';
  * path for HISTORICAL series (POL growth), AGGREGATES (protocol totals), and the AFFILIATE graph
  * (leaderboard) — things that otherwise need slow multi-call RPC log scans.
  *
- * NOT used for live, block-by-block values (claimable KLC, live mark-to-market POL value): those
+ * NOT used for live, block-by-block values (claimable KMT, live mark-to-market POL value): those
  * are computed from the current block/pool state and stay on RPC (the subgraph snapshots lag).
  */
-const SUBGRAPH_URLS: Record<NetworkName, string> = {
-	mainnet: 'https://app.kalyswap.io/subgraphs/name/vault-subgraph-kalychain-mainnet',
-	testnet: '', // no testnet subgraph deployed — callers fall back to empty/RPC
-};
+export const SUBGRAPH_URL =
+	process.env.NEXT_PUBLIC_VAULT_SUBGRAPH_URL || 'https://app.kalyswap.io/subgraphs/name/vault-subgraph-kmt';
 
-// The DEX (Uniswap-V3) subgraph — separate deployment. Source of whole-pool TVL + the KLC price
-// (WKLC is the base token, so its derivedETH = 1 and KLC price = bundle.ethPriceUSD).
-const V3_SUBGRAPH_URLS: Record<NetworkName, string> = {
-	mainnet: 'https://app.kalyswap.io/subgraphs/name/v3-subgraph-kalychain-mainnet',
-	testnet: '',
-};
+// The DEX (Uniswap-V3) subgraph — separate deployment. Source of whole-pool TVL + the KMT price
+// (WKMT is the base token, so its derivedETH = 1 and KMT price = bundle.ethPriceUSD).
+export const V3_SUBGRAPH_URL =
+	process.env.NEXT_PUBLIC_V3_SUBGRAPH_URL || 'https://app.kalyswap.io/subgraphs/name/v3-subgraph-kmt';
 
-export const SUBGRAPH_URL = SUBGRAPH_URLS[ACTIVE_NETWORK];
-export const hasSubgraph = SUBGRAPH_URL !== '';
-export const V3_SUBGRAPH_URL = V3_SUBGRAPH_URLS[ACTIVE_NETWORK];
-export const hasV3Subgraph = V3_SUBGRAPH_URL !== '';
-
-const A = getAddresses(ACTIVE_NETWORK);
+const A = getAddresses();
 // stable address (lowercase) -> decimals, to value `paid`/amounts the subgraph stores in raw units.
 const STABLE_DECIMALS: Record<string, number> = {};
 for (const s of Object.values(A.stables)) STABLE_DECIMALS[s.address.toLowerCase()] = s.decimals;
 const decimalsFor = (addr: string) => STABLE_DECIMALS[addr?.toLowerCase()] ?? 18;
-// The KLC/stable V3 pools backing the vaults (lowercased for id_in filters).
+// The KMT/stable V3 pools backing the vaults (lowercased for id_in filters).
 const VAULT_POOL_IDS = Object.values(A.stables)
 	.map((s) => s.pool?.toLowerCase())
 	.filter(Boolean) as string[];
@@ -51,40 +40,42 @@ async function gql<T>(query: string, variables?: Record<string, unknown>, url: s
 	return json.data as T;
 }
 
-const isKlcSymbol = (s: string) => /^w?klc$/i.test(s);
+// Which side of a pool is the wrapped native token — by ADDRESS, never by symbol (the symbol
+// regex this replaced matched "WKLC" and silently mislabelled every pool after the rename).
+const WRAPPED_NATIVE = A.wrappedNative.toLowerCase();
+const isWrappedNative = (tokenId: string) => tokenId.toLowerCase() === WRAPPED_NATIVE;
 
 export interface PoolTvl { totalUsd: number; perPool: { symbol: string; usd: number }[]; klcUsd: number }
 
 /**
- * Whole-pool TVL of the KLC/stable vault pools (everyone's liquidity) + the live KLC price, from
+ * Whole-pool TVL of the KMT/stable vault pools (everyone's liquidity) + the live KMT price, from
  * the V3 subgraph. This is the TOTAL pool depth — distinct from protocol-OWNED liquidity (the DAO's
  * own positions, valued on-chain in usePolStats). Shown as a separate "Total Pool Liquidity" stat.
  */
 export async function fetchPoolTvl(): Promise<PoolTvl | null> {
-	if (!hasV3Subgraph || VAULT_POOL_IDS.length === 0) return null;
+	if (VAULT_POOL_IDS.length === 0) return null;
 	const data = await gql<{
-		pools: { token0: { symbol: string }; token1: { symbol: string }; totalValueLockedUSD: string }[];
+		pools: { token0: { id: string; symbol: string }; token1: { id: string; symbol: string }; totalValueLockedUSD: string }[];
 		bundles: { ethPriceUSD: string }[];
 	}>(
-		`query PoolTvl($ids: [ID!]!) {
-			pools(where: { id_in: $ids }) { token0 { symbol } token1 { symbol } totalValueLockedUSD }
+		`query PoolTvl($ids: [Bytes!]!) {
+			pools(where: { id_in: $ids }) { token0 { id symbol } token1 { id symbol } totalValueLockedUSD }
 			bundles(first: 1) { ethPriceUSD }
 		}`,
 		{ ids: VAULT_POOL_IDS },
 		V3_SUBGRAPH_URL,
 	);
 	const perPool = data.pools.map((p) => ({
-		symbol: isKlcSymbol(p.token0.symbol) ? p.token1.symbol : p.token0.symbol,
+		symbol: isWrappedNative(p.token0.id) ? p.token1.symbol : p.token0.symbol,
 		usd: Number(p.totalValueLockedUSD),
 	}));
 	const totalUsd = perPool.reduce((s, p) => s + p.usd, 0);
-	const klcUsd = Number(data.bundles[0]?.ethPriceUSD ?? 0); // WKLC.derivedETH = 1 → KLC = ethPriceUSD
+	const klcUsd = Number(data.bundles[0]?.ethPriceUSD ?? 0); // WKMT.derivedETH = 1 → KMT = ethPriceUSD
 	return { totalUsd, perPool, klcUsd };
 }
 
-/** Live KLC price from the V3 subgraph (bundle.ethPriceUSD). null if unavailable. */
+/** Live KMT price from the V3 subgraph (bundle.ethPriceUSD). null if unavailable. */
 export async function fetchKlcPriceV3(): Promise<number | null> {
-	if (!hasV3Subgraph) return null;
 	const data = await gql<{ bundles: { ethPriceUSD: string }[] }>(
 		`{ bundles(first: 1) { ethPriceUSD } }`,
 		undefined,
@@ -102,7 +93,6 @@ export interface PolPoint { t: number; usd: number }
  * POL value shown as the headline). One query, paginated, cheap.
  */
 export async function fetchPolHistory(): Promise<PolPoint[]> {
-	if (!hasSubgraph) return [];
 	const data = await gql<{ vaults: { paid: string; stable: string; createdAtTimestamp: string }[] }>(
 		`query PolHistory($first: Int!) {
 			vaults(first: $first, orderBy: createdAtTimestamp, orderDirection: asc) {
@@ -131,7 +121,6 @@ export async function fetchPolHistory(): Promise<PolPoint[]> {
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000';
 
 export async function fetchAffiliateGraph(split: FeeSplit = DEFAULT_FEE_SPLIT): Promise<{ edges: SponsorEdge[]; legs: FeeLeg[]; head: bigint }> {
-	if (!hasSubgraph) return { edges: [], legs: [], head: 0n };
 	// buyer/level1/2/3 are Account ENTITY REFERENCES — they MUST be queried with a selection
 	// set ({ address }). Queried as scalars, graph-node silently OMITS them from the response
 	// (no error), which nulled every commission leg and made the leaderboard show $0.00.
@@ -194,7 +183,6 @@ export interface ProtocolTotals { vaultsMinted: number; totalDepositedUsd: numbe
 
 /** Protocol-wide aggregates: vault count from the singleton, deposited-USD summed from vaults. */
 export async function fetchProtocolTotals(): Promise<ProtocolTotals> {
-	if (!hasSubgraph) return { vaultsMinted: 0, totalDepositedUsd: 0 };
 	const data = await gql<{
 		protocol: { totalVaultsSold: string } | null;
 		vaults: { paid: string; stable: string }[];

@@ -15,7 +15,7 @@ interface InvestmentCalculatorProps {
 	onPriceMultiplierChange: (v: number) => void;
 	dict: Dictionary;
 	locale: Locale;
-	klcPrice: number;
+	kmtPrice: number;
 }
 
 export function InvestmentCalculator({
@@ -23,7 +23,7 @@ export function InvestmentCalculator({
 	onPriceMultiplierChange,
 	dict,
 	locale,
-	klcPrice,
+	kmtPrice,
 }: InvestmentCalculatorProps) {
 	const [amount, setAmount] = useState<number>(1000);
 	const [selectedTier, setSelectedTier] = useState<TierKey>('pro1k');
@@ -102,7 +102,7 @@ export function InvestmentCalculator({
 								<div className="block text-xs uppercase tracking-wider text-amber-300/80 font-medium mb-2">
 									{dict.calculator.vaultTier}
 								</div>
-								<div className="grid grid-cols-5 gap-1.5">
+								<div className="grid grid-cols-4 gap-1.5">
 									{TIERS.map((t) => (
 										<button
 											key={t.key}
@@ -136,7 +136,7 @@ export function InvestmentCalculator({
 								onChange={onPriceMultiplierChange}
 								dict={dict}
 								locale={locale}
-								klcPrice={klcPrice}
+								kmtPrice={kmtPrice}
 							/>
 						</div>
 

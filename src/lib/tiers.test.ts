@@ -4,8 +4,8 @@ import {
 	ACCEPTED_STABLES,
 	FEE_PCT,
 	POL_PCT,
-	FLOW_EXAMPLE_USD,
-} from '@/lib/tiers';
+	FLOW_EXAMPLE_USD, BLOCK_REWARD_KMT, BASE_KMT_PRICE, project } from '@/lib/tiers';
+import { ADDRESSES } from '@/lib/chain/addresses';
 
 describe('splitPurchase', () => {
 	it('splits 1000 into 20% fees and 80% POL', () => {
@@ -34,8 +34,14 @@ describe('splitPurchase', () => {
 		expect(FLOW_EXAMPLE_USD).toBe(1000);
 	});
 
-	it('accepts only the KLC-pair stablecoins (USDT, KUSD, USDC)', () => {
-		expect([...ACCEPTED_STABLES]).toEqual(['USDT', 'KUSD', 'USDC']);
-		expect(ACCEPTED_STABLES).not.toContain('DAI');
+	it('accepts exactly the stables the VaultManager has enabled (USDT only at launch)', () => {
+		expect([...ACCEPTED_STABLES]).toEqual(Object.keys(ADDRESSES.stables));
+		expect([...ACCEPTED_STABLES]).toEqual(['USDT']);
+	});
+
+	it('uses the 3890 block reward and the $0.20 relaunch price as the labelled fallback', () => {
+		expect(BLOCK_REWARD_KMT).toBe(0.03);
+		expect(BASE_KMT_PRICE).toBe(0.2);
+		expect(project({ investmentUsd: 1000, baseApr: 0.5, priceMultiplier: 2 }).kmtPriceUsd).toBe(0.4);
 	});
 });

@@ -3,7 +3,7 @@
 import { useClaimable, useKlcPrice, useVaults } from '@/lib/chain/reads';
 import { useClaim } from '@/lib/chain/writes';
 import { TIERS } from '@/lib/tiers';
-import { fmtUsd, fmtKlc } from '@/lib/format';
+import { fmtUsd, fmtKmt } from '@/lib/format';
 import { Skeleton } from './Skeleton';
 import { LiveBadge } from './LiveBadge';
 import type { Dictionary } from '@/i18n/dictionaries/en';
@@ -16,7 +16,7 @@ interface YourPositionProps {
 
 export function YourPosition({ addr, t, liveLabel }: YourPositionProps) {
 	const claimable = useClaimable(addr);
-	const { data: klcPrice } = useKlcPrice();
+	const { data: kmtPrice } = useKlcPrice();
 	const vaults = useVaults(addr);
 	const { claim, isPending } = useClaim();
 
@@ -24,8 +24,8 @@ export function YourPosition({ addr, t, liveLabel }: YourPositionProps) {
 	const claimableKlc =
 		claimable.data !== undefined ? Number(claimable.data.totalClaimableKlc) / 1e18 : undefined;
 	const claimableUsd =
-		claimableKlc !== undefined && klcPrice !== undefined
-			? claimableKlc * klcPrice
+		claimableKlc !== undefined && kmtPrice !== undefined
+			? claimableKlc * kmtPrice
 			: undefined;
 
 	const ids = claimable.data?.ids ?? [];
@@ -68,7 +68,7 @@ export function YourPosition({ addr, t, liveLabel }: YourPositionProps) {
 				) : (
 					<>
 						<div className="text-4xl font-bold text-white tabular-nums font-mono">
-							{fmtKlc(claimableKlc ?? 0)}
+							{fmtKmt(claimableKlc ?? 0)}
 						</div>
 						{claimableUsd !== undefined ? (
 							<p className="text-sm text-white/50">

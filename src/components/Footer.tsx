@@ -28,9 +28,6 @@ export function Footer({ dict }: FooterProps) {
 						<a href="https://docs.kalychain.io" target="_blank" rel="noreferrer" className="hover:text-amber-400 transition-colors">
 							{dict.footer.links.docs}
 						</a>
-						<a href="/terms" className="hover:text-amber-400 transition-colors">
-							{dict.footer.links.terms}
-						</a>
 					</div>
 				</div>
 			</div>

@@ -8,7 +8,7 @@ import type { Locale } from '@/i18n/config';
 interface NavProps {
 	dict: Dictionary;
 	locale: Locale;
-	/** When on the dApp page: hide the waitlist CTA and render `rightActions` (the wallet button) instead. */
+	/** When on the dApp page: hide the Launch-App CTA and render `rightActions` (the wallet button) instead. */
 	appMode?: boolean;
 	rightActions?: ReactNode;
 }
