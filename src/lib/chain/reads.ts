@@ -9,7 +9,7 @@ import { getOwnedVaultTokenIds, getTreasuryPositionIds } from './events';
 import { klcUsdFromSlot0, positionTokenAmounts, positionUsdValue } from './pol';
 import { affiliateStats, leaderboard } from './affiliate';
 import type { FeeSplit } from './affiliate';
-import { fetchProtocolTotals, fetchPolHistory, fetchAffiliateGraph, fetchPoolTvl, fetchKlcPriceV3 } from './subgraph';
+import { fetchPolHistory, fetchAffiliateGraph, fetchPoolTvl, fetchKlcPriceV3 } from './subgraph';
 import { getKmtPrice, isValidTokenPrice } from '@/lib/price';
 
 const A = getAddresses();
@@ -237,10 +237,15 @@ export function useClaimable(addr?: `0x${string}`) {
 
 /**
  * Protocol-wide KPIs derived entirely from on-chain data:
- *  - totalDepositedUsd: Σ of every Purchased.paid (stables valued at $1)
- *  - vaultsMinted:      count of Purchased events
+ *  - vaultsMinted:      live vaults, counted by ownerOf() across the whole id range
+ *  - totalDepositedUsd: Σ of each live vault's tier priceUSD
  *  - aprMinPct/aprMaxPct: from each active tier's on-chain aprBps
  * No estimates, no placeholders — empty chain → honest zeros.
+ *
+ * These deliberately do NOT come from the vault subgraph. Its migration handler leaves every
+ * carried-over vault with tier=0, weight=0, paid=0 and stable=0x0, and `protocol.totalVaultsSold`
+ * only counts *purchases* — so after the 3890 migration it read 0 vaults / $0.00 deposited while
+ * 104 vaults existed on chain, which looked to holders like their vaults had vanished.
  */
 export function useProtocolStats() {
 	const client = usePublicClient();
@@ -249,24 +254,54 @@ export function useProtocolStats() {
 		enabled: !!client && !!A.vaultManager,
 		refetchInterval: 30000,
 		queryFn: async () => {
-			// Deposited + minted come from the subgraph (one query, decimal-correct).
-			const { totalDepositedUsd, vaultsMinted } = await fetchProtocolTotals();
-			// Read active tier APRs straight from the contract (aprBps → %).
+			// Read active tier APRs + prices straight from the contract (aprBps → %).
 			const aprs: number[] = [];
+			const priceByTier = new Map<number, number>();
 			for (let i = 0; i < 16; i++) {
 				try {
 					const t = await client!.readContract({
 						address: A.vaultManager!, abi: vaultManagerAbi, functionName: 'tiers', args: [BigInt(i)],
 					});
 					// [0]=priceUSD [1]=aprBps [2]=weight [3]=metadataURI [4]=active
+					priceByTier.set(i, Number(t[0]));
 					if (t[4]) aprs.push(Number(t[1]) / 100);
 				} catch {
 					break; // out-of-range read reverts → no more tiers
 				}
 			}
+
+			// ownerOf reverts for a burned/never-minted id, so allowFailure lets one multicall
+			// separate live vaults from revoked ones in a single round-trip.
+			const nextId = await client!.readContract({
+				address: A.vaultManager!, abi: vaultManagerAbi, functionName: 'nextTokenId',
+			});
+			const ids = Array.from({ length: Number(nextId) > 1 ? Number(nextId) - 1 : 0 }, (_, i) => BigInt(i + 1));
+			const owners = ids.length
+				? await client!.multicall({
+						allowFailure: true,
+						contracts: ids.map((id) => ({
+							address: A.vaultManager!, abi: vaultManagerAbi, functionName: 'ownerOf' as const, args: [id],
+						})),
+					})
+				: [];
+			const liveIds = ids.filter((_, i) => owners[i]?.status === 'success');
+
+			const tiersOf = liveIds.length
+				? await client!.multicall({
+						allowFailure: true,
+						contracts: liveIds.map((id) => ({
+							address: A.vaultManager!, abi: vaultManagerAbi, functionName: 'tierOf' as const, args: [id],
+						})),
+					})
+				: [];
+			const totalDepositedUsd = tiersOf.reduce(
+				(sum, r) => (r.status === 'success' ? sum + (priceByTier.get(Number(r.result)) ?? 0) : sum),
+				0,
+			);
+
 			return {
 				totalDepositedUsd,
-				vaultsMinted,
+				vaultsMinted: liveIds.length,
 				aprMinPct: aprs.length ? Math.min(...aprs) : 0,
 				aprMaxPct: aprs.length ? Math.max(...aprs) : 0,
 			};

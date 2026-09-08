@@ -5,6 +5,7 @@ export const vaultManagerAbi = parseAbi([
 	'function tierOf(uint256) view returns (uint8)',
 	'function vaultWeight(uint256) view returns (uint256)',
 	'function totalWeight() view returns (uint256)',
+	'function nextTokenId() view returns (uint256)',
 	'function ownerOf(uint256) view returns (address)',
 	'function purchase(uint8 tier, address stable, uint256 deadline) returns (uint256)',
 	'function purchase(uint8 tier, address stable, uint256 deadline, address referrer) returns (uint256)',

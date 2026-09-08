@@ -179,19 +179,3 @@ export async function fetchAffiliateGraph(split: FeeSplit = DEFAULT_FEE_SPLIT): 
 	return { edges, legs, head };
 }
 
-export interface ProtocolTotals { vaultsMinted: number; totalDepositedUsd: number }
-
-/** Protocol-wide aggregates: vault count from the singleton, deposited-USD summed from vaults. */
-export async function fetchProtocolTotals(): Promise<ProtocolTotals> {
-	const data = await gql<{
-		protocol: { totalVaultsSold: string } | null;
-		vaults: { paid: string; stable: string }[];
-	}>(
-		`query Totals {
-			protocol(id: "1") { totalVaultsSold }
-			vaults(first: 1000) { paid stable }
-		}`,
-	);
-	const totalDepositedUsd = data.vaults.reduce((sum, v) => sum + Number(v.paid) / 10 ** decimalsFor(v.stable), 0);
-	return { vaultsMinted: Number(data.protocol?.totalVaultsSold ?? data.vaults.length), totalDepositedUsd };
-}

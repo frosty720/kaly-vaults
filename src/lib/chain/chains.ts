@@ -22,6 +22,11 @@ export const kalychain = defineChain({
 	nativeCurrency: NATIVE_CURRENCY,
 	rpcUrls: { default: { http: [RPC_URL] } },
 	blockExplorers: { default: { name: 'KalyScan', url: EXPLORER_URL } },
+	// Without this viem cannot batch, and any per-vault read fans out into one RPC round-trip
+	// per token id. Address from kalychain-ops/files/kmt-3890/addresses.json (.multicall3).
+	contracts: {
+		multicall3: { address: '0xaee3b717fb33d9fddb4fbd0a6906bc34da5a67ab', blockCreated: 4581 },
+	},
 });
 
 /** Namespace for react-query keys — one chain, but keep the keys explicit. */
